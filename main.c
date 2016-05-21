@@ -460,6 +460,12 @@ void playerUpdate(Player* p, Iwbtg* iw)
     if(!p->dead)
     {
         // Player die
+		
+		// Hack / epsilon so that player can stand on a platform with
+		// a spike inside it.
+		float ty = p->position.y;
+		p->position.y = floor(p->position.y) - 0.01;
+		
         if(playerCheckCollision(p, iw, EntityType_spike))
         {
             for(int t = 1; t <= 3; ++t)
@@ -475,6 +481,7 @@ void playerUpdate(Player* p, Iwbtg* iw)
             iw->state = GameState_gameOver;
             iw->gameOverTimer = 0;
         }
+		p->position.y = ty;
         
         // Gravity
         p->velocity.y += p->gravity;
