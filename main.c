@@ -168,6 +168,20 @@ Entity* getFirstFreeEntity(Iwbtg* iw)
     return 0;
 }
 
+int entityCount(Iwbtg* iw, EntityType type)
+{
+    int count = 0;
+    
+    for(int i = 0; i < MAX_ENTITIES; ++i)
+    {
+        Entity* e = &iw->entities[i];
+        if(e->active && e->type == type)
+            ++count;
+    }
+    
+    return count;
+}
+
 Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
 {
     Entity* e = getFirstFreeEntity(iw);
@@ -210,12 +224,13 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
             e->depth = -1;
             break;
             
-        case EntityType_playerBullet:
+        case EntityType_playerBullet: {
             spriteInit(&e->sprite, assetsGetTexture(&iw->game, "playerBullet"), 4, 4);
             int frames[] = { 0, 1 };
             spriteAddAnimation(&e->sprite, Animations_default, &frames[0], 2, 12);
             spritePlayAnimation(&e->sprite, Animations_default);
             e->depth = -2;
+        } break;
     }
     
     return e;
@@ -340,6 +355,23 @@ bool entityCheckPlayerCollision(Entity* e, Player* p)
         return checkRectangleIntersectSprite(&p->hitBox, &p->position, &e->sprite, &e->position);
 }
 
+bool rectangleCheckCollision(Rectanglef* r, Iwbtg* iw, EntityType type)
+{
+    Vector2f offset = { 0.0f, 0.0f };
+    
+    for(int i = 0; i < MAX_ENTITIES; ++i)
+    {
+        Entity* e = &iw->entities[i];
+        if(e->active && e->type == type)
+        {
+            if(checkRectangleIntersectSprite(r, &offset, &e->sprite, &e->position))
+                return true;
+        }
+    }
+    
+    return false;
+}
+
 bool playerCheckCollision(Player* p, Iwbtg* iw, EntityType type)
 {   
     for(int i = 0; i < MAX_ENTITIES; ++i)
@@ -355,12 +387,12 @@ bool playerCheckCollision(Player* p, Iwbtg* iw, EntityType type)
     return false;
 }
 
-bool playerIsCollidingWithGround(Player* p, Iwbtg* iw, float offsetX, float offsetY)
+bool rectangleIsCollidingWithGround(Rectanglef* r, Iwbtg* iw, float offsetX, float offsetY)
 {
     Rectanglef block = { 0.0f, 0.0f, 32.0f, 32.0f };
     
-    int px = (int)(p->position.x + offsetX);
-    int py = (int)(p->position.y + offsetY);
+    int px = (int)(offsetX);
+    int py = (int)(offsetY);
     
     int fx = (px / 32) - 1;
     int fy = (py / 32) - 1;
@@ -375,11 +407,16 @@ bool playerIsCollidingWithGround(Player* p, Iwbtg* iw, float offsetX, float offs
     for(int i = fx; i < tx; ++i)
         for(int t = fy; t < ty; ++t)
             if(iw->map.data[i + (t * iw->map.width)] == 1
-            && rectanglefIntersectAt(p->position.x + offsetX, p->position.y + offsetY, &p->hitBox,
+            && rectanglefIntersectAt(offsetX, offsetY, r,
                                      i * 32, t * 32, &block))
                 return true;
         
     return false;
+}
+
+bool playerIsCollidingWithGround(Player* p, Iwbtg* iw, float offsetX, float offsetY)
+{
+    return rectangleIsCollidingWithGround(&p->hitBox, iw, p->position.x + offsetX, p->position.y + offsetY);
 }
 
 void playerInit(Player* p, float x, float y, Iwbtg* iw)
@@ -470,9 +507,12 @@ void playerUpdate(Player* p, Iwbtg* iw)
         
         if(checkKeyPressed(g, KEY_SHOOT))
         {
-            Entity* b = createEntity(iw, EntityType_playerBullet, p->position.x + 16, p->position.y + 19);
-            b->velocity.x = p->sprite.scale.x * 12;
-            b->position.x += p->sprite.scale.x * 6;
+            if(entityCount(iw, EntityType_playerBullet) < 6)
+            {
+                Entity* b = createEntity(iw, EntityType_playerBullet, p->position.x + 16, p->position.y + 19);
+                b->velocity.x = p->sprite.scale.x * 12;
+                b->position.x += p->sprite.scale.x * 6;
+            }
         }
         
         // Running
@@ -709,6 +749,19 @@ void iwbtgUpdate(Iwbtg* iw)
                         e->animationTimer -= dt;
                         e->sprite.alpha = e->animationTimer / 3;
                         if(e->animationTimer < 0)
+                            destroyEntity(e);
+                        
+                        break;
+                        
+                    case EntityType_playerBullet:
+                    
+                        if(e->position.x > iw->game.size.x || e->position.y > iw->game.size.y
+                        || e->position.x < -4 || e->position.y < -4)
+                            destroyEntity(e);
+                        
+                        Rectanglef hitbox = { 0, 0, 4, 4 };
+                        
+                        if(rectangleIsCollidingWithGround(&hitbox, iw, e->position.x, e->position.y))
                             destroyEntity(e);
                         
                         break;
