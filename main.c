@@ -465,7 +465,8 @@ void playerUpdate(Player* p, Iwbtg* iw)
         }
 
         if(checkKeyReleased(g, KEY_JUMP))
-            p->velocity.y *= p->jumpDampening;
+			if(p->velocity.y < 0)
+				p->velocity.y *= p->jumpDampening;
         
         if(checkKeyPressed(g, KEY_SHOOT))
         {
