@@ -71,6 +71,6 @@ bool rectanglefIntersectAt(float aX, float aY, Rectanglef* a,
 {
     return !((aX + a->x) > b->w + (b->x + bX) 
           || (aY + a->y) > b->h + (b->y + bY)
-          || (aX + a->x) + a->w < (b->x + bX) 
-          || (aY + a->y) + a->h < (b->y + bY));
+          || (aX + a->x) + a->w <= (b->x + bX) 
+          || (aY + a->y) + a->h <= (b->y + bY));
 }

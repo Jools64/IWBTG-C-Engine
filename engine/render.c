@@ -203,6 +203,9 @@ void drawText(Game* g, Font* f, char* text, float x, float y)
         offsetY = 0, 
         length = strlen(text);
     
+    if(f == 0)
+        f = &g->font;
+    
     for(int i = 0; i < length; ++i)
     {
         char c = f->layout[(int)text[i]];

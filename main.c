@@ -424,10 +424,10 @@ void playerInit(Player* p, float x, float y, Iwbtg* iw)
     p->position.x = x;
     p->position.y = y;
     
-    p->hitBox.x = 11.0f;
+    p->hitBox.x = 10.0f;
     p->hitBox.y = 10.0f;
-    p->hitBox.w = 12.0f; 
-    p->hitBox.h = 21.0f;
+    p->hitBox.w = 13.0f; 
+    p->hitBox.h = 22.0f;
     
     spriteInit(&p->sprite, assetsGetTexture(&iw->game, "kid"), 32, 32);
     
@@ -510,7 +510,7 @@ void playerUpdate(Player* p, Iwbtg* iw)
             if(entityCount(iw, EntityType_playerBullet) < 6)
             {
                 Entity* b = createEntity(iw, EntityType_playerBullet, p->position.x + 16, p->position.y + 19);
-                b->velocity.x = p->sprite.scale.x * 12;
+                b->velocity.x = p->sprite.scale.x * 16;
                 b->position.x += p->sprite.scale.x * 6;
             }
         }
@@ -613,6 +613,8 @@ void iwbtgInit(Iwbtg* iw)
     playerInit(&iw->player, 64, 128 + 32, iw);
     iw->saveState.playerPosition = iw->player.position;
     iw->room = iw->saveState.room = 1;
+    
+    fontInit(&iw->game.font, assetsGetTexture(&iw->game, "font"), 24, 32, "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890,.!?\"'/\\<>()=:");
 }
 
 void iwbtgLoad(Iwbtg* iw)
@@ -630,6 +632,7 @@ void iwbtgLoad(Iwbtg* iw)
     assetsLoadTexture(g, "assets/warp.png", "warp");
     assetsLoadTexture(g, "assets/block_tiles.png", "blockTiles");
     assetsLoadTexture(g, "assets/player_bullet.png", "playerBullet");
+    assetsLoadTexture(g, "assets/font.png", "font");
 }
 
 void iwbtgUpdate(Iwbtg* iw)
@@ -953,6 +956,7 @@ void iwbtgDraw(Iwbtg* iw)
         
         if(checkKey(g, KEY_TILE_PICKER))
             textureDraw(g, iw->objectsTexture, 0, 0);
+        
     }
     
     if(iw->state == GameState_gameOver)
@@ -974,6 +978,10 @@ void iwbtgDraw(Iwbtg* iw)
             spriteDraw(g, s, cx, cy);
         }
     }
+    
+    char roomText[128];
+    snprintf(roomText, 128, "ROOM %d", iw->room);
+    drawText(&iw->game, 0, roomText, 8, 8);
     
     renderEnd(g);
 }
