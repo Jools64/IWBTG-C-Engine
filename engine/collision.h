@@ -40,8 +40,8 @@ bool checkRectangleIntersectSprite(Rectanglef* r, Vector2f* rp, Sprite* s, Vecto
             
             if(x >= 0 && x >= sx 
             && y >= 0 && y >= sy
-            && x < s->texture->size.x && x <= sx + s->size.x
-            && y < s->texture->size.y && y <= sy + s->size.y)
+            && x < s->texture->size.x && x < sx + s->size.x
+            && y < s->texture->size.y && y < sy + s->size.y)
             {
                 unsigned char* data = (unsigned char*) s->texture->surface->pixels;
                 int index = (((int)x + ((int)y * s->texture->size.x))*4) + 3;

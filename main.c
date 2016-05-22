@@ -372,7 +372,7 @@ bool rectangleCheckCollision(Rectanglef* r, Iwbtg* iw, EntityType type)
     return false;
 }
 
-bool playerCheckCollision(Player* p, Iwbtg* iw, EntityType type)
+Entity* playerCheckCollision(Player* p, Iwbtg* iw, EntityType type)
 {   
     for(int i = 0; i < MAX_ENTITIES; ++i)
     {
@@ -380,11 +380,11 @@ bool playerCheckCollision(Player* p, Iwbtg* iw, EntityType type)
         if(e->active && e->type == type)
         {
             if(checkRectangleIntersectSprite(&p->hitBox, &p->position, &e->sprite, &e->position))
-                return true;
+                return e;
         }
     }
     
-    return false;
+    return 0;
 }
 
 bool rectangleIsCollidingWithGround(Rectanglef* r, Iwbtg* iw, float offsetX, float offsetY)
@@ -582,10 +582,14 @@ void playerUpdate(Player* p, Iwbtg* iw)
         }
     }
     
-    if(playerCheckCollision(p, iw, EntityType_warp))
+	Entity* warp;
+    if(warp = playerCheckCollision(p, iw, EntityType_warp))
     {
         iw->room++;
         char buffer[128];
+		p->position.x = warp->position.x + 64 - 16;
+		p->position.y = warp->position.y + 64 - 16;
+		
         loadMap(iw, getCurrentMapName(iw, buffer, 128));
     }
     
