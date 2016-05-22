@@ -27,10 +27,12 @@ int sign(float value);
 char* cloneString(Game* g, char* string);
 bool checkFileExists(char* filePath);
 
+Vector2f vector2fAdd(Vector2f a, Vector2f b);
 Vector2f vector2fSubtract(Vector2f a, Vector2f b);
 float vector2fMagnitude(Vector2f a);
 Vector2f vector2fNormalize(Vector2f a);
 Vector2f vector2fMultiply(Vector2f a, float b);
+Vector2f vector2fLerp(Vector2f source, Vector2f destination, float t);
 
 bool rectanglefIntersectAt(float aX, float aY, Rectanglef* a,
                            float bX, float bY, Rectanglef* b);

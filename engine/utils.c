@@ -36,6 +36,12 @@ bool checkFileExists(char* filePath)
     return false;
 }
 
+Vector2f vector2fAdd(Vector2f a, Vector2f b)
+{
+    Vector2f result = { a.x + b.x, a.y + b.y };
+    return result;
+}
+
 Vector2f vector2fSubtract(Vector2f a, Vector2f b)
 {
     Vector2f result = { a.x - b.x, a.y - b.y };
@@ -63,6 +69,12 @@ Vector2f vector2fMultiply(Vector2f a, float b)
 {
     Vector2f result = { a.x * b, a.y * b };
     return result;
+}
+
+Vector2f vector2fLerp(Vector2f source, Vector2f destination, float t)
+{
+    Vector2f delta = vector2fSubtract(destination, source);
+    return vector2fAdd(source, vector2fMultiply(delta, t));
 }
 
 

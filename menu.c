@@ -1,4 +1,4 @@
-void menuInit(Menu* m, float x, float y)
+void menuInit(Menu* m, float x, float y, Iwbtg* iw)
 {
     m->itemCount = 0;
     m->firstItem = m->selected = 0;
@@ -7,6 +7,10 @@ void menuInit(Menu* m, float x, float y)
     m->spacing.x = m->spacing.y = 10;
     m->orientation = MenuOrientation_vertical;
     m->idCounter = 0;
+    int frames[] = { 0, 1 };
+    spriteInit(&m->cursor, assetsGetTexture(&iw->game, "fruit"), 32, 32);
+    spriteAddAnimation(&m->cursor, Animations_default, &frames[0], 2, 6);
+    spritePlayAnimation(&m->cursor, Animations_default);
 }
 
 MenuItem* menuAddItem(Menu* m, MenuItemType type, char* label, Iwbtg* iw)
@@ -96,6 +100,18 @@ void updateMenu(Menu* m, Iwbtg* iw, float delta)
             }
         }
     }
+    
+    Vector2f cursorDestination = {
+        m->selected->lastDrawPosition.x - (m->selected->size.x / 2), 
+        m->selected->lastDrawPosition.y
+    };
+    m->cursorPosition = vector2fLerp(m->cursorPosition, cursorDestination, 0.2);
+    Vector2f cursor2Destination = {
+        m->selected->lastDrawPosition.x + (m->selected->size.x / 2), 
+        m->selected->lastDrawPosition.y
+    };
+    m->cursor2Position = vector2fLerp(m->cursor2Position, cursor2Destination, 0.2);
+    spriteUpdate(&m->cursor, delta);
 }
 
 void drawMenu(Menu* m, Iwbtg* iw)
@@ -107,6 +123,8 @@ void drawMenu(Menu* m, Iwbtg* iw)
         Color c = iw->game.font.sprite.color;
         if(m->selected != e)
             iw->game.font.sprite.color = makeColor(0.6, 0.6, 0.7, 1.0);
+        e->lastDrawPosition.x = offset.x;
+        e->lastDrawPosition.y = offset.y;
         drawTextCentered(&iw->game, 0, e->label, offset.x, offset.y);
         iw->game.font.sprite.color = c;
         
@@ -115,4 +133,12 @@ void drawMenu(Menu* m, Iwbtg* iw)
         else if(m->orientation == MenuOrientation_horizontal)
             offset.x += e->size.x + m->spacing.x;
     }
+    
+    float ox = m->cursorPosition.x - (m->cursor.size.x/2);
+    float oy = m->cursorPosition.y - (m->cursor.size.y/2) + 16;
+    spriteDraw(&iw->game, &m->cursor, ox - 24, oy);
+    
+    ox = m->cursor2Position.x - (m->cursor.size.x/2);
+    oy = m->cursor2Position.y - (m->cursor.size.y/2) + 16;
+    spriteDraw(&iw->game, &m->cursor, ox + 20, oy);
 }

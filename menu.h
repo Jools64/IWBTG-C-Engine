@@ -24,6 +24,7 @@ typedef struct MenuItem
     void* functionData;
     void (*function)(MenuItem* mi, void* data);
     int id;
+    Vector2f lastDrawPosition;
 } MenuItem;
 
 #define MAX_ELEMENTS_PER_MENU 20
@@ -38,10 +39,13 @@ typedef struct Menu
     MenuItem* selected;
     MenuOrientation orientation;
     int idCounter;
+    Sprite cursor;
+    Vector2f cursorPosition;
+    Vector2f cursor2Position;
 } Menu;
 
 typedef struct Iwbtg Iwbtg;
 
-void menuInit(Menu* m, float x, float y);
+void menuInit(Menu* m, float x, float y, Iwbtg* iw);
 MenuItem* menuAddItem(Menu* m, MenuItemType type, char* label, Iwbtg* iw);
 void drawMenu(Menu* m, Iwbtg* iw);

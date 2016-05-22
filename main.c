@@ -668,7 +668,7 @@ void iwbtgInit(Iwbtg* iw)
     MenuItem* mi;
     
     // MAIN MENU
-    menuInit(&iw->mainMenu, iw->game.size.x / 2, 540 - 230);
+    menuInit(&iw->mainMenu, iw->game.size.x / 2, 540 - 230, iw);
     iw->mainMenu.spacing.y = 15;
     
     mi = menuAddItem(&iw->mainMenu, MenuItemType_button, "START", iw);
@@ -682,7 +682,7 @@ void iwbtgInit(Iwbtg* iw)
     mi->functionData = (void*) iw;
     
     // SAVE MENU
-    menuInit(&iw->loadMenu, 240, 540 - 180);
+    menuInit(&iw->loadMenu, 240, 540 - 180, iw);
     iw->loadMenu.spacing.x = 80;
     iw->loadMenu.orientation = MenuOrientation_horizontal;
     
@@ -728,6 +728,7 @@ void iwbtgLoad(Iwbtg* iw)
     assetsLoadTexture(g, "assets/player_bullet.png", "playerBullet");
     assetsLoadTexture(g, "assets/font.png", "font");
     assetsLoadTexture(g, "assets/title.png", "title");
+    assetsLoadTexture(g, "assets/fruit.png", "fruit");
 }
 
 void iwbtgUpdate(Iwbtg* iw)
