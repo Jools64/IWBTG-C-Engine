@@ -124,7 +124,8 @@ typedef struct Iwbtg
     Grid map;
     Editor editor;
     
-    Menu mainMenu;
+    Menu mainMenu, loadMenu;
+    Menu* activeMenu;
     
     Entity entities[MAX_ENTITIES];
     Entity* entityDrawOrder[MAX_ENTITIES];
@@ -616,16 +617,22 @@ void playerUpdate(Player* p, Iwbtg* iw)
     spriteUpdate(&p->sprite, 1.0f / 50.0f);
 }
 
-void menuFunctionStart(void* data)
+void menuFunctionStart(MenuItem* mi, void* data)
 {
     Iwbtg* iw = (Iwbtg*)data;
-    iw->state = GameState_inGame;
+    iw->activeMenu = &iw->loadMenu;
 }
 
-void menuFunctionQuit(void* data)
+void menuFunctionQuit(MenuItem* mi, void* data)
 {
     Iwbtg* iw = (Iwbtg*)data;
     iw->game.running = false;
+}
+
+void menuFunctionLoadSave(MenuItem* mi, void* data)
+{
+    Iwbtg* iw = (Iwbtg*)data;
+    iw->state = GameState_inGame;
 }
 
 void iwbtgInit(Iwbtg* iw)
@@ -644,11 +651,12 @@ void iwbtgInit(Iwbtg* iw)
     iw->objectsTexture = assetsGetTexture(&iw->game, "objects");
     iw->titleTexture = assetsGetTexture(&iw->game, "title");
     
+    MenuItem* mi;
+    
+    // MAIN MENU
     menuInit(&iw->mainMenu, iw->game.size.x / 2, 540 - 230);
     iw->mainMenu.spacing.y = 15;
     
-    // Register menu items
-    MenuItem* mi;
     mi = menuAddItem(&iw->mainMenu, MenuItemType_button, "START", iw);
     mi->function = menuFunctionStart;
     mi->functionData = (void*) iw;
@@ -658,6 +666,25 @@ void iwbtgInit(Iwbtg* iw)
     mi = menuAddItem(&iw->mainMenu, MenuItemType_button, "QUIT", iw);
     mi->function = menuFunctionQuit;
     mi->functionData = (void*) iw;
+    
+    // SAVE MENU
+    menuInit(&iw->loadMenu, 240, 540 - 180);
+    iw->loadMenu.spacing.x = 80;
+    iw->loadMenu.orientation = MenuOrientation_horizontal;
+    
+    mi = menuAddItem(&iw->loadMenu, MenuItemType_button, "SLOT 1", iw);
+    mi->function = menuFunctionLoadSave;
+    mi->functionData = (void*) iw;
+    
+    mi = menuAddItem(&iw->loadMenu, MenuItemType_button, "SLOT 2", iw);
+    mi->function = menuFunctionLoadSave;
+    mi->functionData = (void*) iw;
+    
+    mi = menuAddItem(&iw->loadMenu, MenuItemType_button, "SLOT 3", iw);
+    mi->function = menuFunctionLoadSave;
+    mi->functionData = (void*) iw;
+    
+    iw->activeMenu = &iw->mainMenu;
     
     spriteInit(&iw->editor.objectSprite, iw->objectsTexture, 32, 32);
     
@@ -697,7 +724,7 @@ void iwbtgUpdate(Iwbtg* iw)
     
     if(iw->state == GameState_menu)
     {
-        updateMenu(&iw->mainMenu, iw, dt);
+        updateMenu(iw->activeMenu, iw, dt);
         if(checkKeyPressed(g, KEY_MENU))
             iw->game.running = false;
     }
@@ -756,7 +783,10 @@ void iwbtgUpdate(Iwbtg* iw)
         }
         
         if(checkKeyPressed(g, KEY_MENU))
+        {
             iw->state = GameState_menu;
+            iw->activeMenu = &iw->mainMenu;
+        }
         
         iw->entityDrawCount = 0;
         if(!iw->editor.enabled)
@@ -876,7 +906,7 @@ void iwbtgDraw(Iwbtg* iw)
         int oy = 80;
         textureDraw(&iw->game, iw->titleTexture, ox, oy);
         
-        drawMenu(&iw->mainMenu, iw);
+        drawMenu(iw->activeMenu, iw);
     }
     
     if(iw->state == GameState_inGame || iw->state == GameState_gameOver)

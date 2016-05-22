@@ -5,6 +5,12 @@ typedef enum MenuItemType
     MenuItemType_integer
 } MenuItemType;
 
+typedef enum MenuOrientation
+{
+    MenuOrientation_horizontal,
+    MenuOrientation_vertical
+} MenuOrientation;
+
 typedef struct MenuItem MenuItem;
 #define MAX_LABEL_LENGTH 128
 typedef struct MenuItem
@@ -16,7 +22,8 @@ typedef struct MenuItem
             * previous;
             
     void* functionData;
-    void (*function)(void* data);
+    void (*function)(MenuItem* mi, void* data);
+    int id;
 } MenuItem;
 
 #define MAX_ELEMENTS_PER_MENU 20
@@ -29,6 +36,8 @@ typedef struct Menu
     Vector2f position;
     Vector2f spacing;
     MenuItem* selected;
+    MenuOrientation orientation;
+    int idCounter;
 } Menu;
 
 typedef struct Iwbtg Iwbtg;
