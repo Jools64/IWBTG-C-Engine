@@ -1,5 +1,10 @@
 #define PI 3.141592
 #include "engine/engine.h"
+#include "menu.h"
+
+// TODO: Stop being so lazy and break up this into headers and c source files.
+
+// HEADER
 
 int defaultMap[] = {
     1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
@@ -26,19 +31,6 @@ typedef struct
     int width, height;
     int* data;
 } Grid;
-
-void gridSet(Grid* g, int x, int y, int value)
-{
-    if(x >= 0 && y >= 0 && x < g->width && y < g->height)
-        g->data[x + (y * g->width)] = value;
-}
-
-int gridGet(Grid* g, int x, int y)
-{
-    if(x >= 0 && y >= 0 && x < g->width && y < g->height)
-        return g->data[x + (y * g->width)];
-    return -1;
-}
 
 typedef enum
 {
@@ -111,7 +103,7 @@ typedef struct
 #define MAP_WIDTH 30
 #define MAP_HEIGHT 17
 
-typedef struct
+typedef struct Iwbtg
 {
     Game game;
     Player player;
@@ -125,11 +117,14 @@ typedef struct
     Texture* cloudsTexture;
     Texture* objectsTexture;
     Texture* gameOverTexture;
+    Texture* titleTexture;
     
     Sprite gameOverSprite;
     
     Grid map;
     Editor editor;
+    
+    Menu mainMenu;
     
     Entity entities[MAX_ENTITIES];
     Entity* entityDrawOrder[MAX_ENTITIES];
@@ -140,6 +135,25 @@ typedef struct
     GameState state;
     float gameOverTimer;
 } Iwbtg;
+
+// C FILES
+
+#include "menu.c"
+
+// IMPLEMENTATION
+
+void gridSet(Grid* g, int x, int y, int value)
+{
+    if(x >= 0 && y >= 0 && x < g->width && y < g->height)
+        g->data[x + (y * g->width)] = value;
+}
+
+int gridGet(Grid* g, int x, int y)
+{
+    if(x >= 0 && y >= 0 && x < g->width && y < g->height)
+        return g->data[x + (y * g->width)];
+    return -1;
+}
 
 char* getCurrentMapName(Iwbtg* iw, char* string, int stringLength)
 {
@@ -602,18 +616,48 @@ void playerUpdate(Player* p, Iwbtg* iw)
     spriteUpdate(&p->sprite, 1.0f / 50.0f);
 }
 
+void menuFunctionStart(void* data)
+{
+    Iwbtg* iw = (Iwbtg*)data;
+    iw->state = GameState_inGame;
+}
+
+void menuFunctionQuit(void* data)
+{
+    Iwbtg* iw = (Iwbtg*)data;
+    iw->game.running = false;
+}
+
 void iwbtgInit(Iwbtg* iw)
 {
+    fontInit(&iw->game.font, assetsGetTexture(&iw->game, "font"), 24, 32, "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890,.!?\"'/\\<>()=:");
+    
     iw->map.width = MAP_WIDTH;
     iw->map.height = MAP_HEIGHT;
     iw->map.data = iw->mapDataMemory;
     iw->editor.selectedObject = 1;
-    iw->state = GameState_inGame;
+    iw->state = GameState_menu;
     
     iw->blockTexture = assetsGetTexture(&iw->game, "block");
     iw->backgroundTexture = assetsGetTexture(&iw->game, "background");
     iw->cloudsTexture = assetsGetTexture(&iw->game, "clouds");
     iw->objectsTexture = assetsGetTexture(&iw->game, "objects");
+    iw->titleTexture = assetsGetTexture(&iw->game, "title");
+    
+    menuInit(&iw->mainMenu, iw->game.size.x / 2, 540 - 230);
+    iw->mainMenu.spacing.y = 15;
+    
+    // Register menu items
+    MenuItem* mi;
+    mi = menuAddItem(&iw->mainMenu, MenuItemType_button, "START", iw);
+    mi->function = menuFunctionStart;
+    mi->functionData = (void*) iw;
+    
+    menuAddItem(&iw->mainMenu, MenuItemType_button, "OPTIONS", iw);
+    
+    mi = menuAddItem(&iw->mainMenu, MenuItemType_button, "QUIT", iw);
+    mi->function = menuFunctionQuit;
+    mi->functionData = (void*) iw;
     
     spriteInit(&iw->editor.objectSprite, iw->objectsTexture, 32, 32);
     
@@ -624,8 +668,6 @@ void iwbtgInit(Iwbtg* iw)
     playerInit(&iw->player, 64, 128 + 32, iw);
     iw->saveState.playerPosition = iw->player.position;
     iw->room = iw->saveState.room = 1;
-    
-    fontInit(&iw->game.font, assetsGetTexture(&iw->game, "font"), 24, 32, "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890,.!?\"'/\\<>()=:");
 }
 
 void iwbtgLoad(Iwbtg* iw)
@@ -644,6 +686,7 @@ void iwbtgLoad(Iwbtg* iw)
     assetsLoadTexture(g, "assets/block_tiles.png", "blockTiles");
     assetsLoadTexture(g, "assets/player_bullet.png", "playerBullet");
     assetsLoadTexture(g, "assets/font.png", "font");
+    assetsLoadTexture(g, "assets/title.png", "title");
 }
 
 void iwbtgUpdate(Iwbtg* iw)
@@ -652,133 +695,144 @@ void iwbtgUpdate(Iwbtg* iw)
     float dt = (float)1 / 50;
     iw->time += dt;
     
+    if(iw->state == GameState_menu)
+    {
+        updateMenu(&iw->mainMenu, iw, dt);
+        if(checkKeyPressed(g, KEY_MENU))
+            iw->game.running = false;
+    }
+    
     if(iw->state == GameState_gameOver)
     {
         iw->gameOverTimer += dt;
     }
     
-    playerUpdate(&iw->player, iw);
-    
-    if(iw->editor.enabled)
+    if(iw->state == GameState_inGame || iw->state == GameState_gameOver)
     {
-        int mx = iw->game.input.mousePosition.x / 32;
-        int my = iw->game.input.mousePosition.y / 32;
-            
-        if(checkMouseButton(g, SDL_BUTTON_LEFT))
+    
+        playerUpdate(&iw->player, iw);
+        
+        if(iw->editor.enabled)
         {
-            
-            if(checkKey(g, KEY_TILE_PICKER))
-                iw->editor.selectedObject = mx + (my * (iw->objectsTexture->size.x / 32)) + 1;
-            else
-                gridSet(&iw->map, mx, my, iw->editor.selectedObject);
+            int mx = iw->game.input.mousePosition.x / 32;
+            int my = iw->game.input.mousePosition.y / 32;
+                
+            if(checkMouseButton(g, SDL_BUTTON_LEFT))
+            {
+                
+                if(checkKey(g, KEY_TILE_PICKER))
+                    iw->editor.selectedObject = mx + (my * (iw->objectsTexture->size.x / 32)) + 1;
+                else
+                    gridSet(&iw->map, mx, my, iw->editor.selectedObject);
+            }
+            else if(checkMouseButton(g, SDL_BUTTON_RIGHT))
+                gridSet(&iw->map, mx, my, 0);
         }
-        else if(checkMouseButton(g, SDL_BUTTON_RIGHT))
-            gridSet(&iw->map, mx, my, 0);
-    }
-    
-    if(checkKeyPressed(g, KEY_FULLSCREEN_TOGGLE))
-        gameFullscreenToggle(g);
-    
-    if(checkKeyPressed(g, KEY_SAVE_LEVEL))
-    {
-        char buffer[128];
-        saveMap(iw, getCurrentMapName(iw, buffer, 128));
-    }
-    
-    if(checkKeyPressed(g, KEY_LOAD_LEVEL))
-    {
-        char buffer[128];
-        loadMap(iw, getCurrentMapName(iw, buffer, 128));
-    }
-    
-    if(checkKeyPressed(g, KEY_EDITOR_TOGGLE))
-    {
-        iw->editor.enabled = !iw->editor.enabled;
-        if(!iw->editor.enabled)
+        
+        if(checkKeyPressed(g, KEY_FULLSCREEN_TOGGLE))
+            gameFullscreenToggle(g);
+        
+        if(checkKeyPressed(g, KEY_SAVE_LEVEL))
         {
             char buffer[128];
             saveMap(iw, getCurrentMapName(iw, buffer, 128));
+        }
+        
+        if(checkKeyPressed(g, KEY_LOAD_LEVEL))
+        {
+            char buffer[128];
             loadMap(iw, getCurrentMapName(iw, buffer, 128));
         }
-    }
-    
-    if(checkKeyPressed(g, KEY_MENU))
-        g->running = false;
-    
-    iw->entityDrawCount = 0;
-    if(!iw->editor.enabled)
-    {
-        for(int i = 0; i < MAX_ENTITIES; ++i)
+        
+        if(checkKeyPressed(g, KEY_EDITOR_TOGGLE))
         {
-            Entity* e = &iw->entities[i];
-            if(e->active)
+            iw->editor.enabled = !iw->editor.enabled;
+            if(!iw->editor.enabled)
             {
-                iw->entityDrawOrder[iw->entityDrawCount++] = e;
-                e->velocity.x += e->acceleration.x;
-                e->velocity.y += e->acceleration.y;
-                e->position.x += e->velocity.x;
-                e->position.y += e->velocity.y;
-                spriteUpdate(&e->sprite, 1.0f / 50.0f);
-                
-                float dist = vector2fMagnitude(e->velocity);
-                dist -= e->friction * dt;
-                if(dist < 0)
-                    dist = 0;
-                e->velocity = vector2fMultiply(vector2fNormalize(e->velocity), dist);
-                
-                e->sprite.angle += e->spin * dt * PI * 2;
-                
-                if((float)sign(e->spin) * e->spin > 0)
+                char buffer[128];
+                saveMap(iw, getCurrentMapName(iw, buffer, 128));
+                loadMap(iw, getCurrentMapName(iw, buffer, 128));
+            }
+        }
+        
+        if(checkKeyPressed(g, KEY_MENU))
+            iw->state = GameState_menu;
+        
+        iw->entityDrawCount = 0;
+        if(!iw->editor.enabled)
+        {
+            for(int i = 0; i < MAX_ENTITIES; ++i)
+            {
+                Entity* e = &iw->entities[i];
+                if(e->active)
                 {
-                    int s = sign(e->spin);
-                    e->spin -= (float)sign(e->spin) * e->spinFriction  * dt * PI * 2;
-                    if(s != sign(e->spin))
-                        e->spin = 0;
-                }
-                
-                switch(e->type)
-                {
-                    case EntityType_save:
-                        
-                        e->position.y -= sin(iw->time * 2) * 0.2;
-                        
-                        if(entityCheckPlayerCollision(e, &iw->player))
-                        {
-                            if(e->animationTimer <= 0)
-                                saveGame(iw, true);
-                            e->sprite.frame = 1;
-                            e->animationTimer = 0.5;
-                        }
-                        if(e->animationTimer > 0)
-                        {
-                            e->animationTimer -= dt;
-                            if(e->animationTimer <= 0)
-                                e->sprite.frame = 0;
-                        }
-                        
-                        break;
-                        
-                    case EntityType_particle:
-                        
-                        e->animationTimer -= dt;
-                        e->sprite.alpha = e->animationTimer / 3;
-                        if(e->animationTimer < 0)
-                            destroyEntity(e);
-                        
-                        break;
-                        
-                    case EntityType_playerBullet:
+                    iw->entityDrawOrder[iw->entityDrawCount++] = e;
+                    e->velocity.x += e->acceleration.x;
+                    e->velocity.y += e->acceleration.y;
+                    e->position.x += e->velocity.x;
+                    e->position.y += e->velocity.y;
+                    spriteUpdate(&e->sprite, 1.0f / 50.0f);
                     
-                        if(e->position.x > iw->game.size.x || e->position.y > iw->game.size.y
-                        || e->position.x < -4 || e->position.y < -4)
-                            destroyEntity(e);
+                    float dist = vector2fMagnitude(e->velocity);
+                    dist -= e->friction * dt;
+                    if(dist < 0)
+                        dist = 0;
+                    e->velocity = vector2fMultiply(vector2fNormalize(e->velocity), dist);
+                    
+                    e->sprite.angle += e->spin * dt * PI * 2;
+                    
+                    if((float)sign(e->spin) * e->spin > 0)
+                    {
+                        int s = sign(e->spin);
+                        e->spin -= (float)sign(e->spin) * e->spinFriction  * dt * PI * 2;
+                        if(s != sign(e->spin))
+                            e->spin = 0;
+                    }
+                    
+                    switch(e->type)
+                    {
+                        case EntityType_save:
+                            
+                            e->position.y -= sin(iw->time * 2) * 0.2;
+                            
+                            if(entityCheckPlayerCollision(e, &iw->player))
+                            {
+                                if(e->animationTimer <= 0)
+                                    saveGame(iw, true);
+                                e->sprite.frame = 1;
+                                e->animationTimer = 0.5;
+                            }
+                            if(e->animationTimer > 0)
+                            {
+                                e->animationTimer -= dt;
+                                if(e->animationTimer <= 0)
+                                    e->sprite.frame = 0;
+                            }
+                            
+                            break;
+                            
+                        case EntityType_particle:
+                            
+                            e->animationTimer -= dt;
+                            e->sprite.alpha = e->animationTimer / 3;
+                            if(e->animationTimer < 0)
+                                destroyEntity(e);
+                            
+                            break;
+                            
+                        case EntityType_playerBullet:
                         
-                        Rectanglef hitbox = { 0, 0, 4, 4 };
-                        
-                        if(rectangleIsCollidingWithGround(&hitbox, iw, e->position.x, e->position.y))
-                            destroyEntity(e);
-                        
-                        break;
+                            if(e->position.x > iw->game.size.x || e->position.y > iw->game.size.y
+                            || e->position.x < -4 || e->position.y < -4)
+                                destroyEntity(e);
+                            
+                            Rectanglef hitbox = { 0, 0, 4, 4 };
+                            
+                            if(rectangleIsCollidingWithGround(&hitbox, iw, e->position.x, e->position.y))
+                                destroyEntity(e);
+                            
+                            break;
+                    }
                 }
             }
         }
@@ -816,183 +870,195 @@ void iwbtgDraw(Iwbtg* iw)
     textureDraw(g, iw->cloudsTexture, offset, 0);
     textureDraw(g, iw->cloudsTexture, offset - iw->cloudsTexture->size.x, 0);
     
-    qsort(iw->entityDrawOrder, iw->entityDrawCount, sizeof(Entity*), compareEntitiesByDepth);
+    if(iw->state == GameState_menu)
+    {
+        int ox = (iw->game.size.x / 2) - (iw->titleTexture->size.x / 2);
+        int oy = 80;
+        textureDraw(&iw->game, iw->titleTexture, ox, oy);
+        
+        drawMenu(&iw->mainMenu, iw);
+    }
     
-    if(!iw->editor.enabled)
-        for(int i = 0; i < iw->entityDrawCount; ++i)
-        {
-            Entity* e = iw->entityDrawOrder[i];
-            if(e->active)
+    if(iw->state == GameState_inGame || iw->state == GameState_gameOver)
+    {
+        qsort(iw->entityDrawOrder, iw->entityDrawCount, sizeof(Entity*), compareEntitiesByDepth);
+        
+        if(!iw->editor.enabled)
+            for(int i = 0; i < iw->entityDrawCount; ++i)
             {
-                switch(e->type)
+                Entity* e = iw->entityDrawOrder[i];
+                if(e->active)
                 {
-                    case EntityType_warp:
-                        for(int t = 0; t < 5; ++t)
-                        {
-                            e->sprite.frame = t;
-                            if(t > 2) // Warp cloud effect
+                    switch(e->type)
+                    {
+                        case EntityType_warp:
+                            for(int t = 0; t < 5; ++t)
                             {
-                                e->sprite.scale.x = e->sprite.scale.y = 1;
-                                e->sprite.additiveBlend = true;
-                                e->sprite.alpha = 0.2;
-                                e->sprite.angle = iw->time * 2;
-                                if(t == 4)
-                                    e->sprite.angle *= -1;
+                                e->sprite.frame = t;
+                                if(t > 2) // Warp cloud effect
+                                {
+                                    e->sprite.scale.x = e->sprite.scale.y = 1;
+                                    e->sprite.additiveBlend = true;
+                                    e->sprite.alpha = 0.2;
+                                    e->sprite.angle = iw->time * 2;
+                                    if(t == 4)
+                                        e->sprite.angle *= -1;
+                                }
+                                else // The dials of the warp
+                                {
+                                    float scaleAnimation = sin(iw->time);
+                                    scaleAnimation = (float)sign(scaleAnimation) * (scaleAnimation * scaleAnimation * scaleAnimation);
+                                    e->sprite.scale.x = e->sprite.scale.y = 0.6 + (scaleAnimation * 0.2);
+                                    e->sprite.additiveBlend = false;
+                                    e->sprite.alpha = 1;
+                                    e->sprite.angle = iw->time * 0.5;
+                                    if(t == 1)
+                                        e->sprite.angle *= -1;
+                                    if(t == 2)
+                                        e->sprite.angle *= 2;
+                                }
+                                spriteDraw(g, &e->sprite, e->position.x, e->position.y);
                             }
-                            else // The dials of the warp
+                            e->sprite.frame = 5; // Collision Mask
+                            break;
+                            
+                        case EntityType_block: {
+                            Sprite* s = &e->sprite;
+                            
+                            int tr, tl, br, bl;
+                            
+                            // Code ripped and translated directly from an
+                            // old project. Probably needs some tidying.
                             {
-                                float scaleAnimation = sin(iw->time);
-                                scaleAnimation = (float)sign(scaleAnimation) * (scaleAnimation * scaleAnimation * scaleAnimation);
-                                e->sprite.scale.x = e->sprite.scale.y = 0.6 + (scaleAnimation * 0.2);
-                                e->sprite.additiveBlend = false;
-                                e->sprite.alpha = 1;
-                                e->sprite.angle = iw->time * 0.5;
-                                if(t == 1)
-                                    e->sprite.angle *= -1;
-                                if(t == 2)
-                                    e->sprite.angle *= 2;
+                                int bn = checkAdjacentBlock(iw, e, 0, -1);
+                                int bne = checkAdjacentBlock(iw, e, 1, -1);
+                                int bnw = checkAdjacentBlock(iw, e, -1, -1);
+
+                                int bs = checkAdjacentBlock(iw, e, 0, 1);
+                                int bse = checkAdjacentBlock(iw, e, 1, 1);
+                                int bsw = checkAdjacentBlock(iw, e, -1, 1);
+
+                                int be = checkAdjacentBlock(iw, e, 1, 0);
+                                int bw = checkAdjacentBlock(iw, e, -1, 0);
+
+                                // tl
+                                {
+                                    int tx = 0, 
+                                        ty = 0;
+                                    if(bn) ty += 1;
+                                    if(bw) tx += 1;
+                                    if(bn && bw && !bnw) { tx = 4; ty = 3; }
+                                    tl = tx + (ty*5);
+                                }
+
+                                // tr
+                                {
+                                    int tx = 3, 
+                                        ty = 0;
+                                    if(bn) ty += 1;
+                                    if(be) tx -= 1;
+                                    if(bn && be && !bne) { tx = 4; ty = 2; }
+                                    tr = tx + (ty*5);
+                                }
+
+                                // bl
+                                {
+                                    int tx = 0, 
+                                        ty = 3;
+                                    if(bs) ty -= 1;
+                                    if(bw) tx += 1;
+                                    if(bs && bw && !bsw) { tx = 4; ty = 1; }
+                                    bl = tx + (ty*5);
+                                }
+
+                                // br
+                                {
+                                    int tx = 3, 
+                                        ty = 3;
+                                    if(bs) ty -= 1;
+                                    if(be) tx -= 1;
+                                    if(bs && be && !bse) { tx = 4; ty = 0; }
+                                    br = tx + (ty*5);
+                                }
                             }
+                            
+                            s->frame = tl;
+                            spriteDraw(g, s, e->position.x, e->position.y);
+                            s->frame = tr;
+                            spriteDraw(g, s, e->position.x + 16, e->position.y);
+                            s->frame = bl;
+                            spriteDraw(g, s, e->position.x, e->position.y + 16);
+                            s->frame = br;
+                            spriteDraw(g, s, e->position.x + 16, e->position.y + 16);
+                        } break;
+                            
+                        default:
                             spriteDraw(g, &e->sprite, e->position.x, e->position.y);
-                        }
-                        e->sprite.frame = 5; // Collision Mask
-                        break;
-                        
-                    case EntityType_block: {
-                        Sprite* s = &e->sprite;
-                        
-                        int tr, tl, br, bl;
-                        
-                        // Code ripped and translated directly from an
-                        // old project. Probably needs some tidying.
-                        {
-                            int bn = checkAdjacentBlock(iw, e, 0, -1);
-                            int bne = checkAdjacentBlock(iw, e, 1, -1);
-                            int bnw = checkAdjacentBlock(iw, e, -1, -1);
-
-                            int bs = checkAdjacentBlock(iw, e, 0, 1);
-                            int bse = checkAdjacentBlock(iw, e, 1, 1);
-                            int bsw = checkAdjacentBlock(iw, e, -1, 1);
-
-                            int be = checkAdjacentBlock(iw, e, 1, 0);
-                            int bw = checkAdjacentBlock(iw, e, -1, 0);
-
-                            // tl
-                            {
-                                int tx = 0, 
-                                    ty = 0;
-                                if(bn) ty += 1;
-                                if(bw) tx += 1;
-                                if(bn && bw && !bnw) { tx = 4; ty = 3; }
-                                tl = tx + (ty*5);
-                            }
-
-                            // tr
-                            {
-                                int tx = 3, 
-                                    ty = 0;
-                                if(bn) ty += 1;
-                                if(be) tx -= 1;
-                                if(bn && be && !bne) { tx = 4; ty = 2; }
-                                tr = tx + (ty*5);
-                            }
-
-                            // bl
-                            {
-                                int tx = 0, 
-                                    ty = 3;
-                                if(bs) ty -= 1;
-                                if(bw) tx += 1;
-                                if(bs && bw && !bsw) { tx = 4; ty = 1; }
-                                bl = tx + (ty*5);
-                            }
-
-                            // br
-                            {
-                                int tx = 3, 
-                                    ty = 3;
-                                if(bs) ty -= 1;
-                                if(be) tx -= 1;
-                                if(bs && be && !bse) { tx = 4; ty = 0; }
-                                br = tx + (ty*5);
-                            }
-                        }
-                        
-                        s->frame = tl;
-                        spriteDraw(g, s, e->position.x, e->position.y);
-                        s->frame = tr;
-                        spriteDraw(g, s, e->position.x + 16, e->position.y);
-                        s->frame = bl;
-                        spriteDraw(g, s, e->position.x, e->position.y + 16);
-                        s->frame = br;
-                        spriteDraw(g, s, e->position.x + 16, e->position.y + 16);
-                    } break;
-                        
-                    default:
-                        spriteDraw(g, &e->sprite, e->position.x, e->position.y);
-                        break;
+                            break;
+                    }
                 }
             }
-        }
 
-    Player* p = &iw->player;
-    if(!p->dead)
-        spriteDraw(g, &iw->player.sprite, iw->player.position.x, iw->player.position.y);
-    
-    if(iw->editor.enabled)
-    {
-        Sprite* objectSprite = &iw->editor.objectSprite; 
+        Player* p = &iw->player;
+        if(!p->dead)
+            spriteDraw(g, &iw->player.sprite, iw->player.position.x, iw->player.position.y);
         
-        for(int i = 0; i < iw->map.width; ++i)
-            for(int t = 0; t < iw->map.height; ++t)
-            {
-                Sprite* objectSprite = &iw->editor.objectSprite;
-                objectSprite->frame = iw->map.data[i + (t * iw->map.width)] - 1;
-                
-                bool collision = false;
-                
-                if(objectSprite->frame > 1)
-                {
-                    Vector2f position = { (float)i * 32.0f, (float)t * 32.0f };
-                    
-                    if(checkRectangleIntersectSprite(&p->hitBox, &p->position, objectSprite, &position))
-                        collision = true;
-                }
-                
-                if(objectSprite->frame >= 0 && !collision)
-                    spriteDraw(g, objectSprite, i * 32, t * 32);
-            }
-        
-        objectSprite->frame = iw->editor.selectedObject-1;
-        spriteDraw(g, &iw->editor.objectSprite, 4, 4);
-        
-        if(checkKey(g, KEY_TILE_PICKER))
-            textureDraw(g, iw->objectsTexture, 0, 0);
-        
-    }
-    
-    if(iw->state == GameState_gameOver)
-    {
-        int cx = (g->size.x - iw->gameOverSprite.texture->size.x) / 2;
-        int cy = (g->size.y - iw->gameOverSprite.texture->size.y) / 2;
-        
-        Sprite* s = &iw->gameOverSprite;
-        
-        if(iw->gameOverTimer > 0.5)
+        if(iw->editor.enabled)
         {
-            float t = iw->gameOverTimer - 0.5;
-            //t *= t;
-            s->alpha = t * 4;
-            s->scale.x = max(4 - (t*16), 1);  
-            s->scale.y = max(2 - (t*4), 1);  
+            Sprite* objectSprite = &iw->editor.objectSprite; 
             
-            rectangleDraw(g, 0, 0, g->size.x, g->size.y, 0.15, 0.15, 0.3, t * 0.3);
-            spriteDraw(g, s, cx, cy);
+            for(int i = 0; i < iw->map.width; ++i)
+                for(int t = 0; t < iw->map.height; ++t)
+                {
+                    Sprite* objectSprite = &iw->editor.objectSprite;
+                    objectSprite->frame = iw->map.data[i + (t * iw->map.width)] - 1;
+                    
+                    bool collision = false;
+                    
+                    if(objectSprite->frame > 1)
+                    {
+                        Vector2f position = { (float)i * 32.0f, (float)t * 32.0f };
+                        
+                        if(checkRectangleIntersectSprite(&p->hitBox, &p->position, objectSprite, &position))
+                            collision = true;
+                    }
+                    
+                    if(objectSprite->frame >= 0 && !collision)
+                        spriteDraw(g, objectSprite, i * 32, t * 32);
+                }
+            
+            objectSprite->frame = iw->editor.selectedObject-1;
+            spriteDraw(g, &iw->editor.objectSprite, 4, 4);
+            
+            if(checkKey(g, KEY_TILE_PICKER))
+                textureDraw(g, iw->objectsTexture, 0, 0);
+            
         }
+        
+        if(iw->state == GameState_gameOver)
+        {
+            int cx = (g->size.x - iw->gameOverSprite.texture->size.x) / 2;
+            int cy = (g->size.y - iw->gameOverSprite.texture->size.y) / 2;
+            
+            Sprite* s = &iw->gameOverSprite;
+            
+            if(iw->gameOverTimer > 0.5)
+            {
+                float t = iw->gameOverTimer - 0.5;
+                //t *= t;
+                s->alpha = t * 4;
+                s->scale.x = max(4 - (t*16), 1);  
+                s->scale.y = max(2 - (t*4), 1);  
+                
+                rectangleDraw(g, 0, 0, g->size.x, g->size.y, 0.15, 0.15, 0.3, t * 0.3);
+                spriteDraw(g, s, cx, cy);
+            }
+        }
+        
+        char roomText[128];
+        snprintf(roomText, 128, "ROOM %d", iw->room);
+        drawText(&iw->game, 0, roomText, 8, 8);
     }
-    
-    char roomText[128];
-    snprintf(roomText, 128, "ROOM %d", iw->room);
-    drawText(&iw->game, 0, roomText, 8, 8);
     
     renderEnd(g);
 }

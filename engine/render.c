@@ -223,3 +223,73 @@ void drawText(Game* g, Font* f, char* text, float x, float y)
         offsetX += f->letterWidth[(int)text[i]] + f->letterSpacing;
     }
 }
+
+Vector2f getTextSize(Font* f, char* text)
+{
+    Vector2f size = { 0 };
+    
+    int offsetX = 0, 
+        offsetY = 0, 
+        length = strlen(text);
+    
+    for(int i = 0; i < length; ++i)
+    {
+        if(text[i] == '\n')
+        {
+            offsetX = 0;
+            offsetY += f->lineSpacing;
+        }
+        else
+            offsetX += f->letterWidth[(int)text[i]] + f->letterSpacing;
+        
+        size.x = max(size.x, offsetX);
+        size.y = max(size.y, offsetY);
+    }
+    
+    size.y += f->lineSpacing;
+    
+    return size;
+}
+
+float getTextLineWidth(Font* f, char* text)
+{
+    int width = 0, length = strlen(text);
+    
+    for(int i = 0; i < length; ++i)
+    {
+        if(text[i] == '\n')
+            break;
+        width += f->letterWidth[(int)text[i]] + f->letterSpacing;
+    }
+    return width;
+}
+
+void drawTextCentered(Game* g, Font* f, char* text, float x, float y)
+{
+    int offsetX = 0, 
+        offsetY = 0, 
+        length = strlen(text);
+      
+    if(f == 0)
+        f = &g->font;
+      
+    offsetX = -getTextLineWidth(f, text) / 2;
+    
+    for(int i = 0; i < length; ++i)
+    {
+        char c = f->layout[(int)text[i]];
+        if(text[i] == '\n')
+        {
+            if(i + 1 < length)
+                offsetX = -getTextLineWidth(f, &text[i+1]) / 2;
+            offsetY += f->lineSpacing;
+            continue;
+        }
+        if(text[i] != ' ')
+        {
+            f->sprite.frame = c;
+            spriteDraw(g, &f->sprite, x + offsetX, y + offsetY);
+        }
+        offsetX += f->letterWidth[(int)text[i]] + f->letterSpacing;
+    }
+}

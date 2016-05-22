@@ -62,5 +62,8 @@ void fontSetLetterWidth(Font* font, char letter, int letterWidth);
 void fontSetLettersWidth(Font* font, char* letters, int letterWidth);
 void fontSetAllLetterWidth(Font* font, int letterWidth);
 void drawText(Game* g, Font* f, char* text, float x, float y);
+void drawTextCentered(Game* g, Font* f, char* text, float x, float y);
+Vector2f getTextSize(Font* f, char* text);
+float getTextLineWidth(Font* f, char* text);
 
 #endif // RENDERING_H
