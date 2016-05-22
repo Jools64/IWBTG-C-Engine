@@ -129,7 +129,8 @@ typedef struct Iwbtg
     
     Entity entities[MAX_ENTITIES];
     Entity* entityDrawOrder[MAX_ENTITIES];
-    int lastEntityPosition, entityDrawCount, room;
+    int lastEntityPosition, entityDrawCount, room,
+        activeSaveSlot;
     float time;
     int mapDataMemory[MAP_WIDTH * MAP_HEIGHT];
     
@@ -336,8 +337,11 @@ void loadGame(Iwbtg* iw)
 {
     Player* p = &iw->player;
     
+    char saveFileName[128];
+    snprintf(saveFileName, 128, "save%d.sav", iw->activeSaveSlot);
+    
     FILE* f;
-    if(f = fopen("save.sav", "r"))
+    if(f = fopen(saveFileName, "r"))
     {
         fread(&iw->saveState, sizeof(SaveState), 1, f);
         fclose(f);
@@ -362,9 +366,12 @@ void saveGame(Iwbtg* iw, bool position)
         iw->saveState.playerPosition = iw->player.position;
         iw->saveState.room = iw->room;
     }
-
+    
+    char saveFileName[128];
+    snprintf(saveFileName, 128, "save%d.sav", iw->activeSaveSlot);
+    
     // Save
-    FILE* f = fopen("save.sav", "w");
+    FILE* f = fopen(saveFileName, "w");
     fwrite(&iw->saveState, sizeof(SaveState), 1, f);
     fclose(f);
 }
@@ -637,7 +644,9 @@ void menuFunctionQuit(MenuItem* mi, void* data)
 void menuFunctionLoadSave(MenuItem* mi, void* data)
 {
     Iwbtg* iw = (Iwbtg*)data;
+    iw->activeSaveSlot = mi->id + 1;
     iw->state = GameState_inGame;
+    loadGame(iw);
 }
 
 void iwbtgInit(Iwbtg* iw)
