@@ -1,6 +1,11 @@
 #ifndef RENDERING_H
 #define RENDERING_H
 
+typedef struct Color
+{
+    float r, g, b, a;
+} Color;
+
 typedef struct
 {
     SDL_Texture* data;
@@ -26,6 +31,7 @@ typedef struct
     Vector2i size;
     Vector2f scale, origin;
     float angle, frameRate, frameTimer, alpha;
+    Color color;
     Animation* currentAnimation;
     Animation animations[ANIMATIONS_PER_SPRITE];
     int frame;
@@ -51,7 +57,7 @@ void textureDrawExt(Game* g, Texture* t,
                     float tX, float tY, float tW, float tH,
                     float originX, float originY,
                     float scaleX, float scaleY, float angle, 
-                    float alpha, bool additiveBlend);
+                    float alpha, bool additiveBlend, Color color);
 void spriteInit(Sprite* s, Texture* t, float width, float height);
 void spriteUpdate(Sprite* s, float delta);
 void spriteDraw(Game* g, Sprite* s, float x, float y);
@@ -65,5 +71,6 @@ void drawText(Game* g, Font* f, char* text, float x, float y);
 void drawTextCentered(Game* g, Font* f, char* text, float x, float y);
 Vector2f getTextSize(Font* f, char* text);
 float getTextLineWidth(Font* f, char* text);
+Color makeColor(float r, float g, float b, float a);
 
 #endif // RENDERING_H

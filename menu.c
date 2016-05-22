@@ -59,7 +59,7 @@ void updateMenu(Menu* m, Iwbtg* iw, float delta)
     Game* g = &iw->game;
     
     if(m->selected)
-    {
+    {        
         if(checkKeyPressed(g, KEY_DOWN))
         {
             if(m->selected->next)
@@ -76,10 +76,13 @@ void updateMenu(Menu* m, Iwbtg* iw, float delta)
                 m->selected = m->lastItem;
         }
         
-        if(checkKeyPressed(g, KEY_JUMP))
+        if(m->selected->type == MenuItemType_button)
         {
-            if(m->selected && m->selected->function)
-                m->selected->function(m->selected->functionData);
+            if(checkKeyPressed(g, KEY_JUMP) || checkKeyPressed(g, KEY_SHOOT))
+            {
+                if(m->selected && m->selected->function)
+                    m->selected->function(m->selected->functionData);
+            }
         }
     }
 }
@@ -90,10 +93,12 @@ void drawMenu(Menu* m, Iwbtg* iw)
     Vector2f offset = m->position;
     for(MenuItem* e = m->firstItem; e != 0; e = e->next)
     {
-        if(m->selected == e)
-            drawTextCentered(&iw->game, 0, e->label, offset.x + 32, offset.y);
-        else
-            drawTextCentered(&iw->game, 0, e->label, offset.x, offset.y);
+        Color c = iw->game.font.sprite.color;
+        if(m->selected != e)
+            iw->game.font.sprite.color = makeColor(0.6, 0.6, 0.7, 1.0);
+        drawTextCentered(&iw->game, 0, e->label, offset.x, offset.y);
+        iw->game.font.sprite.color = c;
+        
         offset.y += e->size.y + m->spacing.y;
     }
 }

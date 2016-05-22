@@ -28,7 +28,7 @@ void textureDrawExt(Game* g, Texture* t,
                     float tX, float tY, float tW, float tH,
                     float originX, float originY,
                     float scaleX, float scaleY, float angle, float alpha,
-                    bool additiveBlend)
+                    bool additiveBlend, Color color)
 {
     float scaleOffsetX = fabs(scaleX) * w * (originX / w);
     float scaleOffsetY = fabs(scaleY) * h * (originY / h);
@@ -51,7 +51,11 @@ void textureDrawExt(Game* g, Texture* t,
     if(alpha < 0)
         alpha = 0;
     
-    SDL_SetTextureAlphaMod(t->data, alpha * 255);
+    SDL_SetTextureColorMod(t->data, 
+                           clampi((color.r * 255), 0, 255), 
+                           clampi((color.g * 255), 0, 255), 
+                           clampi((color.b * 255), 0, 255));
+    SDL_SetTextureAlphaMod(t->data, alpha * color.a * 255);
     
     if(additiveBlend)
         SDL_SetTextureBlendMode(t->data, SDL_BLENDMODE_ADD);
@@ -78,6 +82,7 @@ void spriteInit(Sprite* s, Texture* t, float width, float height)
     s->visible = true;
     s->alpha = 1;
     s->additiveBlend = false;
+    s->color = makeColor(1.0, 1.0, 1.0, 1.0);
 }
 
 void spriteUpdate(Sprite* s, float delta)
@@ -138,7 +143,7 @@ void spriteDraw(Game* g, Sprite* s, float x, float y)
         textureDrawExt(g, s->texture, x, y, s->size.x, s->size.y,
                        tX, tY, s->size.x, s->size.y,
                        s->origin.x, s->origin.y,
-                       s->scale.x, s->scale.y, s->angle, s->alpha, s->additiveBlend);
+                       s->scale.x, s->scale.y, s->angle, s->alpha, s->additiveBlend, s->color);
     }
 }
 
@@ -292,4 +297,10 @@ void drawTextCentered(Game* g, Font* f, char* text, float x, float y)
         }
         offsetX += f->letterWidth[(int)text[i]] + f->letterSpacing;
     }
+}
+
+Color makeColor(float r, float g, float b, float a)
+{
+    Color c = {r, g, b, a};
+    return c;
 }
