@@ -41,6 +41,7 @@ typedef enum
     EntityType_warp,
     EntityType_particle,
     EntityType_playerBullet,
+    EntityType_fruit,
 } EntityType;
 
 typedef struct
@@ -247,6 +248,13 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
             spritePlayAnimation(&e->sprite, Animations_default);
             e->depth = -2;
         } break;
+        
+        case EntityType_fruit:
+            spriteInit(&e->sprite, assetsGetTexture(&iw->game, "fruit"), 32, 32);
+            int frames[] = { 0, 1 };
+            spriteAddAnimation(&e->sprite, Animations_default, &frames[0], 2, 6);
+            spritePlayAnimation(&e->sprite, Animations_default);
+            break;
     }
     
     return e;
@@ -313,6 +321,8 @@ void loadMap(Iwbtg* iw, char* file)
                 Entity* e = createEntity(iw, EntityType_spike, x, y);
                 e->sprite.frame = typeIndex - 2;
             }
+            else if(typeIndex == 6)
+                createEntity(iw, EntityType_fruit, x, y);
             else if(typeIndex == 10)
                 createEntity(iw, EntityType_save, x, y);
             else if(typeIndex == 11)
@@ -494,7 +504,7 @@ void playerUpdate(Player* p, Iwbtg* iw)
 		float ty = p->position.y;
 		p->position.y = floor(p->position.y) - 0.01;
 		
-        if(playerCheckCollision(p, iw, EntityType_spike))
+        if(playerCheckCollision(p, iw, EntityType_spike) || playerCheckCollision(p, iw, EntityType_fruit))
         {
             for(int t = 1; t <= 3; ++t)
                 for(int i = 0; i < 8; ++i)
@@ -878,6 +888,10 @@ void iwbtgUpdate(Iwbtg* iw)
                             if(rectangleIsCollidingWithGround(&hitbox, iw, e->position.x, e->position.y))
                                 destroyEntity(e);
                             
+                            break;
+                            
+                        case EntityType_fruit:
+                            //e->sprite.angle += 0.01 * PI;
                             break;
                     }
                 }

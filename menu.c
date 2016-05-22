@@ -6,6 +6,7 @@ void menuInit(Menu* m, float x, float y, Iwbtg* iw)
     m->position.y = y;
     m->spacing.x = m->spacing.y = 10;
     m->orientation = MenuOrientation_vertical;
+    m->cursorPosition.x = m->cursorPosition.y = m->cursor2Position.x = m->cursor2Position.y = 0;
     m->idCounter = 0;
     int frames[] = { 0, 1 };
     spriteInit(&m->cursor, assetsGetTexture(&iw->game, "fruit"), 32, 32);
@@ -105,11 +106,17 @@ void updateMenu(Menu* m, Iwbtg* iw, float delta)
         m->selected->lastDrawPosition.x - (m->selected->size.x / 2), 
         m->selected->lastDrawPosition.y
     };
-    m->cursorPosition = vector2fLerp(m->cursorPosition, cursorDestination, 0.2);
+    
+    if(m->cursorPosition.x == 0 && m->cursorPosition.y == 0)
+        m->cursorPosition = cursorDestination;
+    else
+        m->cursorPosition = vector2fLerp(m->cursorPosition, cursorDestination, 0.2);
+    
     Vector2f cursor2Destination = {
         m->selected->lastDrawPosition.x + (m->selected->size.x / 2), 
         m->selected->lastDrawPosition.y
     };
+    
     m->cursor2Position = vector2fLerp(m->cursor2Position, cursor2Destination, 0.2);
     spriteUpdate(&m->cursor, delta);
 }
