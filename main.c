@@ -316,6 +316,11 @@ void loadMap(Iwbtg* iw, char* file)
                 createEntity(iw, EntityType_save, x, y);
             else if(typeIndex == 11)
                 createEntity(iw, EntityType_warp, x-48, y-48);
+            else if(typeIndex == 1)
+            {
+                iw->player.position.x = x;
+                iw->player.position.y = y;
+            }
                 
         }
 }
@@ -339,7 +344,6 @@ void loadGame(Iwbtg* iw)
     }
     
     p->dead = false;
-    p->position = iw->saveState.playerPosition;
     iw->room = iw->saveState.room;
     p->velocity.x = p->velocity.y = 0;
     iw->state = GameState_inGame;
@@ -347,6 +351,8 @@ void loadGame(Iwbtg* iw)
     
     char buffer[128];
     loadMap(iw, getCurrentMapName(iw, buffer, 128));
+    
+    p->position = iw->saveState.playerPosition;
 }
 
 void saveGame(Iwbtg* iw, bool position)
@@ -602,10 +608,9 @@ void playerUpdate(Player* p, Iwbtg* iw)
     {
         iw->room++;
         char buffer[128];
-		p->position.x = warp->position.x + 64 - 16;
-		p->position.y = warp->position.y + 64 - 16;
-		
         loadMap(iw, getCurrentMapName(iw, buffer, 128));
+        p->position.x = warp->position.x + 64 - 16;
+		p->position.y = warp->position.y + 64 - 16;
     }
     
     if(checkKeyPressed(g, KEY_RESTART))
@@ -726,17 +731,19 @@ void iwbtgUpdate(Iwbtg* iw)
     {
         updateMenu(iw->activeMenu, iw, dt);
         if(checkKeyPressed(g, KEY_MENU))
-            iw->game.running = false;
-    }
-    
-    if(iw->state == GameState_gameOver)
+        {
+            if(iw->activeMenu != &iw->mainMenu)
+                iw->activeMenu = &iw->mainMenu;
+            else
+                iw->game.running = false;
+        }
+    } else if(iw->state == GameState_inGame || iw->state == GameState_gameOver)
     {
-        iw->gameOverTimer += dt;
-    }
-    
-    if(iw->state == GameState_inGame || iw->state == GameState_gameOver)
-    {
-    
+        if(iw->state == GameState_gameOver)
+        {
+            iw->gameOverTimer += dt;
+        }
+        
         playerUpdate(&iw->player, iw);
         
         if(iw->editor.enabled)
