@@ -747,6 +747,9 @@ void iwbtgUpdate(Iwbtg* iw)
     float dt = (float)1 / 50;
     iw->time += dt;
     
+    if(checkKeyPressed(g, KEY_FULLSCREEN_TOGGLE))
+        gameFullscreenToggle(g);
+    
     if(iw->state == GameState_menu)
     {
         updateMenu(iw->activeMenu, iw, dt);
@@ -782,9 +785,6 @@ void iwbtgUpdate(Iwbtg* iw)
             else if(checkMouseButton(g, SDL_BUTTON_RIGHT))
                 gridSet(&iw->map, mx, my, 0);
         }
-        
-        if(checkKeyPressed(g, KEY_FULLSCREEN_TOGGLE))
-            gameFullscreenToggle(g);
         
         if(checkKeyPressed(g, KEY_SAVE_LEVEL))
         {

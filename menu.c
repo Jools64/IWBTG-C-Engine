@@ -12,6 +12,7 @@ void menuInit(Menu* m, float x, float y, Iwbtg* iw)
     spriteInit(&m->cursor, assetsGetTexture(&iw->game, "fruit"), 32, 32);
     spriteAddAnimation(&m->cursor, Animations_default, &frames[0], 2, 6);
     spritePlayAnimation(&m->cursor, Animations_default);
+    m->cursor.visible = false;
 }
 
 MenuItem* menuAddItem(Menu* m, MenuItemType type, char* label, Iwbtg* iw)
@@ -31,6 +32,7 @@ MenuItem* menuAddItem(Menu* m, MenuItemType type, char* label, Iwbtg* iw)
     e->next = e->previous = 0;
     e->function = 0;
     e->functionData = 0;
+    e->lastDrawPosition.x = e->lastDrawPosition.y = 0;
     if(strlen(label) < MAX_LABEL_LENGTH)
         strcpy(e->label, label);
     else
@@ -107,17 +109,23 @@ void updateMenu(Menu* m, Iwbtg* iw, float delta)
         m->selected->lastDrawPosition.y
     };
     
-    if(m->cursorPosition.x == 0 && m->cursorPosition.y == 0)
-        m->cursorPosition = cursorDestination;
-    else
-        m->cursorPosition = vector2fLerp(m->cursorPosition, cursorDestination, 0.2);
-    
     Vector2f cursor2Destination = {
         m->selected->lastDrawPosition.x + (m->selected->size.x / 2), 
         m->selected->lastDrawPosition.y
     };
     
-    m->cursor2Position = vector2fLerp(m->cursor2Position, cursor2Destination, 0.2);
+    if(m->cursorPosition.x <= 0 && m->cursorPosition.y <= 0)
+    {
+        m->cursorPosition = cursorDestination;
+        m->cursor2Position = cursor2Destination;
+        m->cursor.visible = false;
+    }
+    else
+    {
+        m->cursor.visible = true;
+        m->cursorPosition = vector2fLerp(m->cursorPosition, cursorDestination, 0.2);
+        m->cursor2Position = vector2fLerp(m->cursor2Position, cursor2Destination, 0.2);
+    }
     spriteUpdate(&m->cursor, delta);
 }
 
