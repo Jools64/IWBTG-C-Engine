@@ -269,7 +269,7 @@ Entity* createParticle(Iwbtg* iw, Texture* texture, float x, float y,
     e->velocity.y = vSpeed;
     e->animationTimer = life;
     e->spin = 1;
-    e->friction = 1;
+    e->friction = 2;
     e->spinFriction = 0.05;
     e->depth = -2;
 
@@ -506,13 +506,16 @@ void playerUpdate(Player* p, Iwbtg* iw)
 		
         if(playerCheckCollision(p, iw, EntityType_spike) || playerCheckCollision(p, iw, EntityType_fruit))
         {
-            for(int t = 1; t <= 3; ++t)
-                for(int i = 0; i < 8; ++i)
+            for(int t = 1; t <= 8; ++t)
+                for(int i = 0; i < 16; ++i)
                 {
-                    float a = ((float)i + ((float)t / 2) ) * PI * 0.25;
-                    float s = 3.0f * t;
-                    createParticle(iw, assetsGetTexture(&iw->game, "playerDeathParticle"), 
-                                   p->position.x, p->position.y, cos(a)*s, sin(a)*s, 2);
+                    float a = ((float)i + ((float)t / 2) ) * PI * 0.25 * 0.5;
+                    float s = t;
+                    s *= s * 0.2;
+                    Entity* pa = createParticle(iw, assetsGetTexture(&iw->game, "playerDeathParticle"), 
+                                                p->position.x, p->position.y, cos(a)*s, sin(a)*s, 3);
+                    pa->sprite.scale.x = 0.1 + (min(((1.0f / s) * 2), 1.5));
+                    pa->sprite.scale.y = 0.1 + (min(((1.0f / s) * 2), 1.5));
                 }
             
             p->dead = true;
@@ -739,6 +742,7 @@ void iwbtgLoad(Iwbtg* iw)
     assetsLoadTexture(g, "assets/font.png", "font");
     assetsLoadTexture(g, "assets/title.png", "title");
     assetsLoadTexture(g, "assets/fruit.png", "fruit");
+    assetsLoadTexture(g, "assets/landscape.png", "landscape");
 }
 
 void iwbtgUpdate(Iwbtg* iw)
@@ -931,6 +935,8 @@ void iwbtgDraw(Iwbtg* iw)
     textureDraw(g, iw->cloudsTexture, offset, 0);
     textureDraw(g, iw->cloudsTexture, offset - iw->cloudsTexture->size.x, 0);
     
+    textureDraw(g, assetsGetTexture(&iw->game, "landscape"), 0, 0);
+    
     if(iw->state == GameState_menu)
     {
         int ox = (iw->game.size.x / 2) - (iw->titleTexture->size.x / 2);
@@ -1096,6 +1102,10 @@ void iwbtgDraw(Iwbtg* iw)
             
         }
         
+        char roomText[128];
+        snprintf(roomText, 128, "ROOM %d", iw->room);
+        drawText(&iw->game, 0, roomText, 8, 8);
+        
         if(iw->state == GameState_gameOver)
         {
             int cx = (g->size.x - iw->gameOverSprite.texture->size.x) / 2;
@@ -1115,10 +1125,6 @@ void iwbtgDraw(Iwbtg* iw)
                 spriteDraw(g, s, cx, cy);
             }
         }
-        
-        char roomText[128];
-        snprintf(roomText, 128, "ROOM %d", iw->room);
-        drawText(&iw->game, 0, roomText, 8, 8);
     }
     
     renderEnd(g);
