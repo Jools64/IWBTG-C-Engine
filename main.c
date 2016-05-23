@@ -1,6 +1,7 @@
 #define PI 3.141592
 #include "engine/engine.h"
 #include "menu.h"
+#include "bucketArray.h"
 
 // TODO: Stop being so lazy and break up this into headers and c source files.
 
