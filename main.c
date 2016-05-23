@@ -665,6 +665,7 @@ void menuFunctionLoadSave(MenuItem* mi, void* data)
 void iwbtgInit(Iwbtg* iw)
 {
     fontInit(&iw->game.font, assetsGetTexture(&iw->game, "font"), 24, 32, "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890,.!?\"'/\\<>()=:");
+    fontSetAllLetterWidth(&iw->game.font, 20);
     
     iw->map.width = MAP_WIDTH;
     iw->map.height = MAP_HEIGHT;

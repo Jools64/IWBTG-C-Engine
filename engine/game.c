@@ -12,7 +12,7 @@ bool gameInit(Game* g, char* title, int width, int height, float scale)
     memoryPoolInit(&g->levelMemory, KB(16));
     memoryPoolInit(&g->frameMemory, KB(16));
     
-    if (SDL_Init(SDL_INIT_VIDEO) != 0)
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0)
     {
         printf("SDL_Init Error: %s\n", SDL_GetError());
         return false;
@@ -24,6 +24,9 @@ bool gameInit(Game* g, char* title, int width, int height, float scale)
                          SDL_WINDOWPOS_CENTERED,
                          width * scale, height * scale, 
                          SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+                         
+    Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
+                         
     if (!g->window)
     {
 	    printf("SDL_CreateWindow Error: %s\n", SDL_GetError());

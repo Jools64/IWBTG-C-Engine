@@ -18,6 +18,12 @@ Texture textureLoad(Game* game, char* filePath)
     }
 }
 
+Sound soundLoad(Game* game, char* filePath)
+{
+    Sound sound = {0};
+    
+}
+
 int assetsHash(char* string)
 {
     int hash = 0;
