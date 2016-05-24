@@ -1,22 +1,31 @@
 
 void soundPlay(Sound* sound, float volume)
 {
-    Mix_PlayChannel(-1, sound->data, 0);
+    int channel = Mix_PlayChannel(-1, sound->data, 0);
+    Mix_Volume(channel, (int)(volume * 128));
 }
 
 void musicPlay(Music* music, float volume, Game* g)
 {
-    if(g->playing)
-    {
-        if(g->playing == music)
+    #ifndef NO_MUSIC
+        if(g->playing)
         {
-            Mix_ResumeMusic();
-            return;
+            if(g->playing == music)
+            {
+                Mix_ResumeMusic();
+                Mix_VolumeMusic((int)(volume * 128));
+                return;
+            }
+            Mix_HaltMusic();
         }
-        Mix_HaltMusic();
-    }
-    g->playing = music;
-    Mix_PlayMusic(music->data, -1);
+        g->playing = music;
+        //Mix_PlayMusic(music->data, -1);
+        
+        Mix_VolumeMusic((int)(volume * 128));
+        Mix_FadeInMusic(music->data, -1,  500);
+        
+        
+    #endif
 }
 
 void musicStop(Game* g)

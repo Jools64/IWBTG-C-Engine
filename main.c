@@ -1,4 +1,7 @@
 #define PI 3.141592
+
+//#define NO_MUSIC
+
 #include "engine/engine.h"
 #include "menu.h"
 
@@ -335,7 +338,7 @@ void loadMap(Iwbtg* iw, char* file)
                 
         }
         
-    musicPlay(assetsGetMusic(&iw->game, "forestMusic"), 0.5, &iw->game);
+    musicPlay(assetsGetMusic(&iw->game, "forestMusic"), 0.7, &iw->game);
 }
 
 void saveMap(Iwbtg* iw, char* file)
@@ -834,6 +837,7 @@ void iwbtgUpdate(Iwbtg* iw)
         {
             iw->state = GameState_menu;
             iw->activeMenu = &iw->mainMenu;
+            musicStop(&iw->game);
         }
         
         iw->entityDrawCount = 0;
@@ -1158,7 +1162,7 @@ int main(int argc, char** argv)
     iwbtgLoad(iwbtg);
     iwbtgInit(iwbtg);
     
-    loadMap(iwbtg, "assets/1.map");
+    //loadMap(iwbtg, "assets/1.map");
     
     while(iwbtg->game.running)
     {
