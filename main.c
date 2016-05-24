@@ -517,6 +517,7 @@ void playerUpdate(Player* p, Iwbtg* iw)
                     pa->sprite.scale.x = 0.1 + (min(((1.0f / s) * 2), 1.5));
                     pa->sprite.scale.y = 0.1 + (min(((1.0f / s) * 2), 1.5));
                 }
+            soundPlay(assetsGetSound(&iw->game, "death"), 1);
             
             p->dead = true;
             iw->state = GameState_gameOver;
@@ -538,7 +539,10 @@ void playerUpdate(Player* p, Iwbtg* iw)
         {
             p->doubleJumpAvailible = true;
             if(checkKeyPressed(g, KEY_JUMP))
+            {
+                soundPlay(assetsGetSound(&iw->game, "jump"), 1);
                 p->velocity.y = -p->jumpSpeed;
+            }
         }
         else
         {
@@ -546,6 +550,7 @@ void playerUpdate(Player* p, Iwbtg* iw)
             {
                 p->velocity.y = -p->doubleJumpSpeed;
                 p->doubleJumpAvailible = false;
+                soundPlay(assetsGetSound(&iw->game, "double_jump"), 1);
             }
         }
 
@@ -560,6 +565,7 @@ void playerUpdate(Player* p, Iwbtg* iw)
                 Entity* b = createEntity(iw, EntityType_playerBullet, p->position.x + 16, p->position.y + 19);
                 b->velocity.x = p->sprite.scale.x * 16;
                 b->position.x += p->sprite.scale.x * 6;
+                soundPlay(assetsGetSound(&iw->game, "shoot"), 1);
             }
         }
         
@@ -744,6 +750,11 @@ void iwbtgLoad(Iwbtg* iw)
     assetsLoadTexture(g, "assets/title.png", "title");
     assetsLoadTexture(g, "assets/fruit.png", "fruit");
     assetsLoadTexture(g, "assets/landscape.png", "landscape");
+    
+    assetsLoadSound(g, "assets/jump.wav", "jump");
+    assetsLoadSound(g, "assets/double_jump.wav", "double_jump");
+    assetsLoadSound(g, "assets/shoot.wav", "shoot");
+    assetsLoadSound(g, "assets/death.wav", "death");
 }
 
 void iwbtgUpdate(Iwbtg* iw)

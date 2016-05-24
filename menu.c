@@ -80,6 +80,7 @@ void updateMenu(Menu* m, Iwbtg* iw, float delta)
         
         if(checkKeyPressed(g, keyNext))
         {
+            soundPlay(assetsGetSound(&iw->game, "jump"), 1);
             if(m->selected->next)
                 m->selected = m->selected->next;
             else
@@ -88,6 +89,7 @@ void updateMenu(Menu* m, Iwbtg* iw, float delta)
         
         if(checkKeyPressed(g, keyPrevious))
         {
+            soundPlay(assetsGetSound(&iw->game, "jump"), 1);
             if(m->selected->previous)
                 m->selected = m->selected->previous;
             else
@@ -98,6 +100,7 @@ void updateMenu(Menu* m, Iwbtg* iw, float delta)
         {
             if(checkKeyPressed(g, KEY_JUMP) || checkKeyPressed(g, KEY_SHOOT))
             {
+                soundPlay(assetsGetSound(&iw->game, "double_jump"), 1);
                 if(m->selected && m->selected->function)
                     m->selected->function(m->selected, m->selected->functionData);
             }

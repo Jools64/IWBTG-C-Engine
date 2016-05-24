@@ -25,8 +25,6 @@ bool gameInit(Game* g, char* title, int width, int height, float scale)
                          width * scale, height * scale, 
                          SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
                          
-    Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
-                         
     if (!g->window)
     {
 	    printf("SDL_CreateWindow Error: %s\n", SDL_GetError());
@@ -53,6 +51,8 @@ bool gameInit(Game* g, char* title, int width, int height, float scale)
         printf("IMG_Init: Failed to init required png support!\n");
         printf("IMG_Init: %s\n", IMG_GetError());
     }
+    
+    Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024);
     
     g->running = true;
     

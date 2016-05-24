@@ -30,6 +30,7 @@
 #include "game.h"
 #include "collision.h"
 #include "bucketArray.h"
+#include "sound.h"
 
 #include "memoryPool.c"
 #include "utils.c"
