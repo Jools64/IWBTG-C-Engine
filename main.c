@@ -334,6 +334,8 @@ void loadMap(Iwbtg* iw, char* file)
             }
                 
         }
+        
+    musicPlay(assetsGetMusic(&iw->game, "forestMusic"), 0.5, &iw->game);
 }
 
 void saveMap(Iwbtg* iw, char* file)
@@ -517,6 +519,7 @@ void playerUpdate(Player* p, Iwbtg* iw)
                     pa->sprite.scale.x = 0.1 + (min(((1.0f / s) * 2), 1.5));
                     pa->sprite.scale.y = 0.1 + (min(((1.0f / s) * 2), 1.5));
                 }
+            musicPause(&iw->game);
             soundPlay(assetsGetSound(&iw->game, "death"), 1);
             
             p->dead = true;
@@ -755,6 +758,8 @@ void iwbtgLoad(Iwbtg* iw)
     assetsLoadSound(g, "assets/double_jump.wav", "double_jump");
     assetsLoadSound(g, "assets/shoot.wav", "shoot");
     assetsLoadSound(g, "assets/death.wav", "death");
+    
+    assetsLoadMusic(g, "assets/forest_music.ogg", "forestMusic");
 }
 
 void iwbtgUpdate(Iwbtg* iw)

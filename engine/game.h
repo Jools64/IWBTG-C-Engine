@@ -19,6 +19,7 @@ typedef struct Game
     KeyBindings keyBindings;
     Vector2f camera;
     Font font;
+    Music* playing;
 } Game;
 
 bool gameInit(Game* g, char* title, int width, int height, float scale);

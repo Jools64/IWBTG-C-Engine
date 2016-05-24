@@ -6,6 +6,11 @@ typedef struct Sound
     Mix_Chunk* data;
 } Sound;
 
+typedef struct Music
+{
+    Mix_Music* data;
+} Music;
+
 typedef enum AssetType
 {
     AssetType_texture,
@@ -22,6 +27,7 @@ typedef struct Asset
     {
         Sound sound;
         Texture texture;
+        Music music;
     };
     AssetType type;
 } Asset;
@@ -37,7 +43,9 @@ int assetsHash(char* string);
 void assetsAddTexture(Assets* as, Game* g, Texture texture, char* name);
 Texture* assetsGetTexture(Game* g, char* name);
 Sound* assetsGetSound(Game* g, char* name);
+Music* assetsGetMusic(Game* g, char* name);
 void assetsLoadTexture(Game* g, char* filePath, char*name);
 void assetsLoadSound(Game* g, char* filePath, char*name);
+void assetsLoadMusic(Game* g, char* filePath, char*name);
 
 #endif // ASSETS_H
