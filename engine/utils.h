@@ -40,6 +40,9 @@ float vector2fMagnitude(Vector2f a);
 Vector2f vector2fNormalize(Vector2f a);
 Vector2f vector2fMultiply(Vector2f a, float b);
 Vector2f vector2fLerp(Vector2f source, Vector2f destination, float t);
+float vector2fDistanceSquared(Vector2f a, Vector2f b);
+float vector2fDistance(Vector2f a, Vector2f b);
+float vector2fNormalizedDotProduct(Vector2f a, Vector2f b);
 
 bool rectanglefIntersectAt(float aX, float aY, Rectanglef* a,
                            float bX, float bY, Rectanglef* b);

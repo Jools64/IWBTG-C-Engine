@@ -23,6 +23,42 @@ typedef enum
     EntityType_fruit,
 } EntityType;
 
+typedef enum
+{
+    ControllerType_none,
+    ControllerType_trap,
+    ControllerType_inOut
+} ControllerType;
+
+typedef struct ControllerTrap
+{
+    float direction;
+    float speed;
+    float activationDistance;
+    float activationWidth;
+    unsigned char activated;
+} ControllerTrap;
+
+typedef struct ControllerInOut
+{
+    float speed;
+    float distance;
+    float direction;
+    float interval;
+    float timer;
+    Vector2f basePosition;
+} ControllerInOut;
+
+typedef struct Controller
+{
+    ControllerType type;
+    union
+    {
+        ControllerTrap trap;
+        ControllerInOut inOut;
+    };
+} Controller;
+
 typedef struct
 {
     Vector2f position, velocity, acceleration;
@@ -32,6 +68,7 @@ typedef struct
     float spin, spinFriction, friction;
     float animationTimer;
     float depth;
+    Controller controller;
 } Entity;
 
 typedef struct 
@@ -112,6 +149,8 @@ typedef struct Iwbtg
     
     GameState state;
     float gameOverTimer;
+    
+    Vector2f debugDrawPosition;
 } Iwbtg;
 
 // C FILES
@@ -181,6 +220,7 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
     e->type = type;
     e->animationTimer = 0;
     e->depth = 0;
+    e->controller.type = ControllerType_none;
     
     // Important: All entities must have a sprite. (Or I need to implement behavior to handle this)
     switch(type)
@@ -275,34 +315,62 @@ void loadMap(Iwbtg* iw, char* file)
     for(int i = 0; i < iw->level.entities.width; ++i)
         for(int t = 0; t < iw->level.entities.height; ++t)
         {
-            int typeIndex = iw->level.entities.data[i + (t * iw->level.entities.width)] - 1;
+            int index = i + (t * iw->level.entities.width);
+            int typeIndex = iw->level.entities.data[index] - 1;
             
             int x = 32 * i,
                 y = 32 * t;
             
+            Entity* e;
             
             if(typeIndex == 0)
             {
                 iw->level.ground.data[i + (t * iw->level.ground.width)] = 1;
-                createEntity(iw, EntityType_block, x, y);
+                e = createEntity(iw, EntityType_block, x, y);
             }
             else if(typeIndex >= 2 && typeIndex <= 5)
             {
-                Entity* e = createEntity(iw, EntityType_spike, x, y);
+                e = createEntity(iw, EntityType_spike, x, y);
                 e->sprite.frame = typeIndex - 2;
             }
             else if(typeIndex == 6)
-                createEntity(iw, EntityType_fruit, x, y);
+                e = createEntity(iw, EntityType_fruit, x, y);
             else if(typeIndex == 10)
-                createEntity(iw, EntityType_save, x, y);
+                e = createEntity(iw, EntityType_save, x, y);
             else if(typeIndex == 11)
-                createEntity(iw, EntityType_warp, x-48, y-48);
+                e = createEntity(iw, EntityType_warp, x-48, y-48);
             else if(typeIndex == 1)
             {
                 iw->player.position.x = x;
                 iw->player.position.y = y;
             }
+            
+            // Add a controller if one has been applied to the entity
+            if(e)
+            {
+                typeIndex = iw->level.controllers.data[index] - 1;
                 
+                if(typeIndex >= 0 && typeIndex <= 3)
+                {
+                    e->controller.type = ControllerType_trap;
+                    e->controller.trap.direction = PI * 0.5f * typeIndex;
+                    e->controller.trap.activationDistance = 150;
+                    e->controller.trap.activationWidth = 32;
+                    e->controller.trap.speed = 16;
+                    e->controller.trap.activated = 0;
+                }
+                else if(typeIndex >= 4 && typeIndex <= 5)
+                {
+                    e->controller.type = ControllerType_inOut;
+                    e->controller.inOut.direction = PI * 0.5;
+                    e->controller.inOut.speed = 1;
+                    if(typeIndex == 5)
+                        e->controller.inOut.speed = 2;
+                    e->controller.inOut.distance = 32;
+                    e->controller.inOut.timer = 0;
+                    e->controller.inOut.basePosition = e->position;
+                }
+            }
         }
         
     musicPlay(assetsGetMusic(&iw->game, "forestMusic"), 0.7, &iw->game);
@@ -727,6 +795,65 @@ void iwbtgLoad(Iwbtg* iw)
     assetsLoadMusic(g, "assets/forest_music.ogg", "forestMusic");
 }
 
+void controllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt)
+{
+    switch(c->type)
+    {
+        case ControllerType_trap: {
+        
+            ControllerTrap* trap = &e->controller.trap;
+            
+            Vector2f pos = vector2fAdd(e->position, vector2fDivide(vector2iTof(e->sprite.size), 2));
+            Vector2f playerPos = {
+                iw->player.position.x + (iw->player.sprite.size.x / 2),
+                iw->player.position.y + (iw->player.sprite.size.y / 2)
+            };
+            
+            float dx = cosf(trap->direction);
+            float dy = -sinf(trap->direction);
+            
+            Vector2f activationRange = {
+                dx * trap->activationDistance, 
+                dy * trap->activationDistance
+            };
+            
+            Vector2f entityToPlayer = {
+                playerPos.x - pos.x,
+                playerPos.y - pos.y
+            };
+            
+            Vector2f a = vector2fNormalize(activationRange);
+            Vector2f b = vector2fDivide(entityToPlayer, trap->activationDistance);
+            
+            float dot = vector2fDot(a, b);
+            Vector2f playerOnActivation = vector2fAdd(vector2fMultiply(activationRange, dot), pos);
+                        
+            if(dot >= 0 && dot <= 1 && vector2fDistance(playerOnActivation, playerPos) < (trap->activationWidth / 2))
+                trap->activated = true;
+
+            if(trap->activated)
+            {
+                e->velocity.x = trap->speed * dx;
+                e->velocity.y = trap->speed * dy;
+            }
+        } break;
+        
+        case ControllerType_inOut: {
+            
+            ControllerInOut* io = &e->controller.inOut;
+            
+            io->timer += dt * io->speed;
+            float phase = fabs(sinf(io->timer));
+            float dx = cosf(io->direction);
+            float dy = -sinf(io->direction);
+            
+            e->position.x = io->basePosition.x + (dx * phase * io->distance) - (dx * io->distance);
+            e->position.y = io->basePosition.y + (dy * phase * io->distance) - (dy * io->distance);
+            
+        } break;
+    }
+}
+
 void iwbtgUpdate(Iwbtg* iw)
 {
     Game* g = &iw->game;
@@ -856,6 +983,8 @@ void iwbtgUpdate(Iwbtg* iw)
                             //e->sprite.angle += 0.01 * PI;
                             break;
                     }
+                    
+                    controllerUpdate(&e->controller, e, iw, dt);
                 }
             }
         }
@@ -1053,6 +1182,8 @@ void iwbtgDraw(Iwbtg* iw)
                 spriteDraw(g, s, cx, cy);
             }
         }
+        
+        rectangleDraw(g, iw->debugDrawPosition.x, iw->debugDrawPosition.y, 4, 4, 1, 0, 1, 1);
     }
     
     renderEnd(g);

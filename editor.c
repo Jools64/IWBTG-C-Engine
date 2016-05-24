@@ -102,12 +102,12 @@ void editorDraw(Iwbtg* iw)
         {
             e->mode--;
             if(e->mode < 0)
-                e->mode = EditorMode_count;
+                e->mode = EditorMode_count-1;
         }
         if(checkKeyPressed(&iw->game, KEY_RIGHT))
         {
             e->mode++;
-            if(e->mode > EditorMode_count)
+            if(e->mode > EditorMode_count-1)
                 e->mode = 0;
         }
         

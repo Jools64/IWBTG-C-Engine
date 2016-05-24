@@ -53,6 +53,12 @@ float vector2fMagnitude(Vector2f a)
     return sqrtf((a.x * a.x) + (a.y * a.y));
 }
 
+Vector2f vector2iTof(Vector2i value)
+{
+    Vector2f v = { (float)value.x, (float)value.y };
+    return v;
+}
+
 Vector2f vector2fNormalize(Vector2f a)
 {
     float magnitude = vector2fMagnitude(a);
@@ -65,9 +71,20 @@ Vector2f vector2fNormalize(Vector2f a)
         return a;
 }
 
+float vector2fDot(Vector2f a, Vector2f b)
+{
+    return (a.x * b.x) + (a.y * b.y);
+}
+
 Vector2f vector2fMultiply(Vector2f a, float b)
 {
     Vector2f result = { a.x * b, a.y * b };
+    return result;
+}
+
+Vector2f vector2fDivide(Vector2f a, float b)
+{
+    Vector2f result = { a.x / b, a.y / b };
     return result;
 }
 
@@ -77,6 +94,29 @@ Vector2f vector2fLerp(Vector2f source, Vector2f destination, float t)
     return vector2fAdd(source, vector2fMultiply(delta, t));
 }
 
+float vector2fDistanceSquared(Vector2f a, Vector2f b)
+{
+    float dx = b.x - a.x;
+    float dy = b.y - a.y;
+    
+    return (dx * dx) + (dy * dy);
+}
+
+float vector2fDistance(Vector2f a, Vector2f b)
+{
+    float dx = b.x - a.x;
+    float dy = b.y - a.y;
+    
+    return sqrtf((dx * dx) + (dy * dy));
+}
+
+float vector2fNormalizedDotProduct(Vector2f a, Vector2f b)
+{
+    a = vector2fNormalize(a);
+    b = vector2fNormalize(b);
+    
+    return (a.x * b.x) + (a.y * b.y);
+}
 
 bool rectanglefIntersectAt(float aX, float aY, Rectanglef* a,
                            float bX, float bY, Rectanglef* b)
