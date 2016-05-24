@@ -86,3 +86,23 @@ bool rectanglefIntersectAt(float aX, float aY, Rectanglef* a,
           || (aX + a->x) + a->w <= (b->x + bX) 
           || (aY + a->y) + a->h <= (b->y + bY));
 }
+
+void gridSet(Grid* g, int x, int y, int value)
+{
+    if(x >= 0 && y >= 0 && x < g->width && y < g->height)
+        g->data[x + (y * g->width)] = value;
+}
+
+int gridGet(Grid* g, int x, int y)
+{
+    if(x >= 0 && y >= 0 && x < g->width && y < g->height)
+        return g->data[x + (y * g->width)];
+    return -1;
+}
+
+void gridInit(Grid* g, int width, int height, MemoryPool* m)
+{
+    g->width = width;
+    g->height = height;
+    g->data = memoryPoolAllocate(m, sizeof(int) * width * height);
+}

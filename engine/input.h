@@ -52,6 +52,7 @@ void inputClearKeyboard(Input* i);
 bool checkMouseButton(Game* g, int button);
 bool checkKey(Game* g, int key);
 bool checkKeyPressed(Game* g, int key);
+bool checkKeyPressedDirect(Game* g, int key);
 bool checkKeyReleased(Game* g, int key);
 
 void setMousePosition(Game* g, int x, int y);

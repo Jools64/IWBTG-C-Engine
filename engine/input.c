@@ -45,6 +45,11 @@ bool checkKeyPressed(Game* g, int key)
 	return g->input.keysPressed[getKey(&g->keyBindings, key) & 255];
 }
 
+bool checkKeyPressedDirect(Game* g, int key)
+{
+    return g->input.keysPressed[key & 255];
+}
+
 bool checkKeyReleased(Game* g, int key)
 {
     return g->input.keysReleased[getKey(&g->keyBindings, key) & 255];

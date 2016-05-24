@@ -3,37 +3,13 @@
 //#define NO_MUSIC
 
 #include "engine/engine.h"
+#include "defaultMap.h"
 #include "menu.h"
+#include "editor.h"
 
 // TODO: Stop being so lazy and break up this into headers and c source files.
 
 // HEADER
-
-int defaultMap[] = {
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-};
-
-typedef struct
-{
-    int width, height;
-    int* data;
-} Grid;
 
 typedef enum
 {
@@ -79,15 +55,6 @@ typedef enum
     Animations_slide
 } Animations;
 
-typedef struct
-{
-    bool enabled;
-    int mode;
-    int selectedObject;
-    Grid* editLayer;
-    Sprite objectSprite;
-} Editor;
-
 typedef enum
 {
     GameState_menu,
@@ -103,7 +70,14 @@ typedef struct
     double time;
 } SaveState;
 
-#define MAX_ENTITIES 1024
+typedef struct
+{
+    Grid entities;
+    Grid ground;
+    Grid controllers;
+} Level;
+
+#define MAX_ENTITIES 2048
 #define MAP_WIDTH 30
 #define MAP_HEIGHT 17
 
@@ -119,13 +93,12 @@ typedef struct Iwbtg
     Texture* blockTexture;
     Texture* backgroundTexture;
     Texture* cloudsTexture;
-    Texture* objectsTexture;
     Texture* gameOverTexture;
     Texture* titleTexture;
     
     Sprite gameOverSprite;
     
-    Grid map;
+    Level level;
     Editor editor;
     
     Menu mainMenu, loadMenu;
@@ -136,7 +109,6 @@ typedef struct Iwbtg
     int lastEntityPosition, entityDrawCount, room,
         activeSaveSlot;
     float time;
-    int mapDataMemory[MAP_WIDTH * MAP_HEIGHT];
     
     GameState state;
     float gameOverTimer;
@@ -145,21 +117,9 @@ typedef struct Iwbtg
 // C FILES
 
 #include "menu.c"
+#include "editor.c"
 
 // IMPLEMENTATION
-
-void gridSet(Grid* g, int x, int y, int value)
-{
-    if(x >= 0 && y >= 0 && x < g->width && y < g->height)
-        g->data[x + (y * g->width)] = value;
-}
-
-int gridGet(Grid* g, int x, int y)
-{
-    if(x >= 0 && y >= 0 && x < g->width && y < g->height)
-        return g->data[x + (y * g->width)];
-    return -1;
-}
 
 char* getCurrentMapName(Iwbtg* iw, char* string, int stringLength)
 {
@@ -298,27 +258,34 @@ void loadMap(Iwbtg* iw, char* file)
     FILE* f;
     if(f = fopen(file, "r"))
     {
-        fread(iw->map.data, sizeof(int) * MAP_WIDTH * MAP_HEIGHT, 1, f);
+        fread(iw->level.entities.data, sizeof(int) * MAP_WIDTH * MAP_HEIGHT, 1, f);
+        fread(iw->level.controllers.data, sizeof(int) * MAP_WIDTH * MAP_HEIGHT, 1, f);
         fclose(f);
     }
     else
     {
-        memcpy(iw->map.data, defaultMap, sizeof(int) * MAP_WIDTH * MAP_HEIGHT);
+        memcpy(iw->level.entities.data, defaultMap, sizeof(int) * MAP_WIDTH * MAP_HEIGHT);
+        memset(iw->level.ground.data, 0, sizeof(int) * MAP_WIDTH * MAP_HEIGHT);
+        memset(iw->level.controllers.data, 0, sizeof(int) * MAP_WIDTH * MAP_HEIGHT);
+        iw->editor.enabled = true;
     }
     
     destroyAllEntities(iw);
     
-    for(int i = 0; i < iw->map.width; ++i)
-        for(int t = 0; t < iw->map.height; ++t)
+    for(int i = 0; i < iw->level.entities.width; ++i)
+        for(int t = 0; t < iw->level.entities.height; ++t)
         {
-            int typeIndex = iw->map.data[i + (t * iw->map.width)] - 1;
+            int typeIndex = iw->level.entities.data[i + (t * iw->level.entities.width)] - 1;
             
             int x = 32 * i,
                 y = 32 * t;
             
             
             if(typeIndex == 0)
+            {
+                iw->level.ground.data[i + (t * iw->level.ground.width)] = 1;
                 createEntity(iw, EntityType_block, x, y);
+            }
             else if(typeIndex >= 2 && typeIndex <= 5)
             {
                 Entity* e = createEntity(iw, EntityType_spike, x, y);
@@ -344,7 +311,8 @@ void loadMap(Iwbtg* iw, char* file)
 void saveMap(Iwbtg* iw, char* file)
 {
     FILE* f = fopen(file, "w");
-    fwrite(iw->map.data, sizeof(int) * MAP_WIDTH * MAP_HEIGHT, 1, f);
+    fwrite(iw->level.entities.data, sizeof(int) * MAP_WIDTH * MAP_HEIGHT, 1, f);
+    fwrite(iw->level.controllers.data, sizeof(int) * MAP_WIDTH * MAP_HEIGHT, 1, f);
     fclose(f);
 }
 
@@ -442,14 +410,14 @@ bool rectangleIsCollidingWithGround(Rectanglef* r, Iwbtg* iw, float offsetX, flo
     int tx = (px / 32) + 2;
     int ty = (py / 32) + 2;
     
-    fx = clampi(fx, 0, iw->map.width);
-    fy = clampi(fy, 0, iw->map.height);
-    tx = clampi(tx, 0, iw->map.width);
-    ty = clampi(ty, 0, iw->map.height);
+    fx = clampi(fx, 0, iw->level.ground.width);
+    fy = clampi(fy, 0, iw->level.ground.height);
+    tx = clampi(tx, 0, iw->level.ground.width);
+    ty = clampi(ty, 0, iw->level.ground.height);
     
     for(int i = fx; i < tx; ++i)
         for(int t = fy; t < ty; ++t)
-            if(iw->map.data[i + (t * iw->map.width)] == 1
+            if(iw->level.ground.data[i + (t * iw->level.ground.width)] == 1
             && rectanglefIntersectAt(offsetX, offsetY, r,
                                      i * 32, t * 32, &block))
                 return true;
@@ -679,16 +647,11 @@ void iwbtgInit(Iwbtg* iw)
     fontInit(&iw->game.font, assetsGetTexture(&iw->game, "font"), 24, 32, "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890,.!?\"'/\\<>()=:");
     fontSetAllLetterWidth(&iw->game.font, 20);
     
-    iw->map.width = MAP_WIDTH;
-    iw->map.height = MAP_HEIGHT;
-    iw->map.data = iw->mapDataMemory;
-    iw->editor.selectedObject = 1;
-    iw->state = GameState_menu;
+    editorInit(iw);
     
     iw->blockTexture = assetsGetTexture(&iw->game, "block");
     iw->backgroundTexture = assetsGetTexture(&iw->game, "background");
     iw->cloudsTexture = assetsGetTexture(&iw->game, "clouds");
-    iw->objectsTexture = assetsGetTexture(&iw->game, "objects");
     iw->titleTexture = assetsGetTexture(&iw->game, "title");
     
     MenuItem* mi;
@@ -726,8 +689,6 @@ void iwbtgInit(Iwbtg* iw)
     
     iw->activeMenu = &iw->mainMenu;
     
-    spriteInit(&iw->editor.objectSprite, iw->objectsTexture, 32, 32);
-    
     Texture* gameOverTexture = assetsGetTexture(&iw->game, "gameOver");
     spriteInit(&iw->gameOverSprite, assetsGetTexture(&iw->game, "gameOver"), 
                gameOverTexture->size.x, gameOverTexture->size.y);
@@ -756,6 +717,7 @@ void iwbtgLoad(Iwbtg* iw)
     assetsLoadTexture(g, "assets/title.png", "title");
     assetsLoadTexture(g, "assets/fruit.png", "fruit");
     assetsLoadTexture(g, "assets/landscape.png", "landscape");
+    assetsLoadTexture(g, "assets/controllers.png", "controllers");
     
     assetsLoadSound(g, "assets/jump.wav", "jump");
     assetsLoadSound(g, "assets/double_jump.wav", "double_jump");
@@ -791,24 +753,10 @@ void iwbtgUpdate(Iwbtg* iw)
             iw->gameOverTimer += dt;
         }
         
-        playerUpdate(&iw->player, iw);
+        if(!iw->editor.enabled)
+            playerUpdate(&iw->player, iw);
         
-        if(iw->editor.enabled)
-        {
-            int mx = iw->game.input.mousePosition.x / 32;
-            int my = iw->game.input.mousePosition.y / 32;
-                
-            if(checkMouseButton(g, SDL_BUTTON_LEFT))
-            {
-                
-                if(checkKey(g, KEY_TILE_PICKER))
-                    iw->editor.selectedObject = mx + (my * (iw->objectsTexture->size.x / 32)) + 1;
-                else
-                    gridSet(&iw->map, mx, my, iw->editor.selectedObject);
-            }
-            else if(checkMouseButton(g, SDL_BUTTON_RIGHT))
-                gridSet(&iw->map, mx, my, 0);
-        }
+        editorUpdate(iw);
         
         if(checkKeyPressed(g, KEY_SAVE_LEVEL))
         {
@@ -820,17 +768,6 @@ void iwbtgUpdate(Iwbtg* iw)
         {
             char buffer[128];
             loadMap(iw, getCurrentMapName(iw, buffer, 128));
-        }
-        
-        if(checkKeyPressed(g, KEY_EDITOR_TOGGLE))
-        {
-            iw->editor.enabled = !iw->editor.enabled;
-            if(!iw->editor.enabled)
-            {
-                char buffer[128];
-                saveMap(iw, getCurrentMapName(iw, buffer, 128));
-                loadMap(iw, getCurrentMapName(iw, buffer, 128));
-            }
         }
         
         if(checkKeyPressed(g, KEY_MENU))
@@ -938,7 +875,7 @@ bool checkAdjacentBlock(Iwbtg* iw, Entity* e, int x, int y)
     int sx = ((int)e->position.x / 32) + x;
     int sy = ((int)e->position.y / 32) + y;
     
-    int value = gridGet(&iw->map, sx, sy);
+    int value = gridGet(&iw->level.entities, sx, sy);
     
     if(value == -1 || value == 1)
         return true;
@@ -1091,41 +1028,11 @@ void iwbtgDraw(Iwbtg* iw)
         if(!p->dead)
             spriteDraw(g, &iw->player.sprite, iw->player.position.x, iw->player.position.y);
         
-        if(iw->editor.enabled)
-        {
-            Sprite* objectSprite = &iw->editor.objectSprite; 
-            
-            for(int i = 0; i < iw->map.width; ++i)
-                for(int t = 0; t < iw->map.height; ++t)
-                {
-                    Sprite* objectSprite = &iw->editor.objectSprite;
-                    objectSprite->frame = iw->map.data[i + (t * iw->map.width)] - 1;
-                    
-                    bool collision = false;
-                    
-                    if(objectSprite->frame > 1)
-                    {
-                        Vector2f position = { (float)i * 32.0f, (float)t * 32.0f };
-                        
-                        if(checkRectangleIntersectSprite(&p->hitBox, &p->position, objectSprite, &position))
-                            collision = true;
-                    }
-                    
-                    if(objectSprite->frame >= 0 && !collision)
-                        spriteDraw(g, objectSprite, i * 32, t * 32);
-                }
-            
-            objectSprite->frame = iw->editor.selectedObject-1;
-            spriteDraw(g, &iw->editor.objectSprite, 4, 4);
-            
-            if(checkKey(g, KEY_TILE_PICKER))
-                textureDraw(g, iw->objectsTexture, 0, 0);
-            
-        }
-        
         char roomText[128];
         snprintf(roomText, 128, "ROOM %d", iw->room);
         drawText(&iw->game, 0, roomText, 8, 8);
+        
+        editorDraw(iw);
         
         if(iw->state == GameState_gameOver)
         {
