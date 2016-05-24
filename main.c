@@ -642,6 +642,7 @@ void playerUpdate(Player* p, Iwbtg* iw)
         
         // Move the player
         p->position.x += p->velocity.x;
+        p->position.x = clampi(p->position.x, -16, iw->game.size.x-16);
         if(playerIsCollidingWithGround(p, iw, 0, 0))
         {
             for(int i = 0; i <= abs(p->velocity.x) + 1; ++i)
@@ -764,6 +765,8 @@ void iwbtgInit(Iwbtg* iw)
     playerInit(&iw->player, 64, 128 + 32, iw);
     iw->saveState.playerPosition = iw->player.position;
     iw->room = iw->saveState.room = 1;
+    
+    musicPlayOnce(assetsGetMusic(&iw->game, "menuMusic"), 0.5, &iw->game);
 }
 
 void iwbtgLoad(Iwbtg* iw)
@@ -793,6 +796,7 @@ void iwbtgLoad(Iwbtg* iw)
     assetsLoadSound(g, "assets/death.wav", "death");
     
     assetsLoadMusic(g, "assets/forest_music.ogg", "forestMusic");
+    assetsLoadMusic(g, "assets/menu_music.ogg", "menuMusic");
 }
 
 void controllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt)
@@ -902,6 +906,7 @@ void iwbtgUpdate(Iwbtg* iw)
             iw->state = GameState_menu;
             iw->activeMenu = &iw->mainMenu;
             musicStop(&iw->game);
+            musicPlayOnce(assetsGetMusic(&iw->game, "menuMusic"), 0.5, &iw->game);
         }
         
         iw->entityDrawCount = 0;

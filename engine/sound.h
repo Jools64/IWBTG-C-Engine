@@ -28,6 +28,29 @@ void musicPlay(Music* music, float volume, Game* g)
     #endif
 }
 
+void musicPlayOnce(Music* music, float volume, Game* g)
+{
+    #ifndef NO_MUSIC
+        if(g->playing)
+        {
+            if(g->playing == music)
+            {
+                Mix_ResumeMusic();
+                Mix_VolumeMusic((int)(volume * 128));
+                return;
+            }
+            Mix_HaltMusic();
+        }
+        g->playing = music;
+        //Mix_PlayMusic(music->data, -1);
+        
+        Mix_VolumeMusic((int)(volume * 128));
+        Mix_FadeInMusic(music->data, 0,  500);
+        
+        
+    #endif
+}
+
 void musicStop(Game* g)
 {
     Mix_HaltMusic();
