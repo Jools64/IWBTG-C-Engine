@@ -347,6 +347,8 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
         case EntityType_movingPlatform:
             spriteInit(&e->sprite, assetsGetTexture(&iw->game, "movingPlatform"), 32, 16);
             e->depth = -1;
+            
+            e->velocity.y = 1;
             break;
     }
     
@@ -602,7 +604,6 @@ void saveGame(Iwbtg* iw, bool position)
     fclose(f);
 }
 
-
 bool entityCheckPlayerCollision(Entity* e, Player* p)
 {
     if(e->active)
@@ -684,7 +685,8 @@ bool rectangleIsCollidingWithGround(Rectanglef* r, Iwbtg* iw, float offsetX, flo
 bool playerIsCollidingWithGround(Player* p, Iwbtg* iw, float offsetX, float offsetY)
 {
     return rectangleIsCollidingWithGround(&p->hitBox, iw, p->position.x + offsetX, p->position.y + offsetY)
-    || playerCheckCollisionAtOffset(p, iw, EntityType_movingPlatform, offsetX, offsetY);
+    || (playerCheckCollisionAtOffset(p, iw, EntityType_movingPlatform, offsetX, offsetY)
+    && !playerCheckCollisionAtOffset(p, iw, EntityType_movingPlatform, offsetX, offsetY-1) && p->velocity.y >= 0);
 }
 
 void playerInit(Player* p, float x, float y, Iwbtg* iw)
@@ -765,6 +767,7 @@ void playerUpdate(Player* p, Iwbtg* iw)
         // Jumping
         if(onGround)
         {
+            p->velocity.y = 0;
             p->doubleJumpAvailible = true;
             if(checkKeyPressed(g, KEY_JUMP))
             {
@@ -1168,10 +1171,6 @@ void iwbtgUpdate(Iwbtg* iw)
                 if(e->active)
                 {
                     iw->entityDrawOrder[iw->entityDrawCount++] = e;
-                    e->velocity.x += e->acceleration.x;
-                    e->velocity.y += e->acceleration.y;
-                    e->position.x += e->velocity.x;
-                    e->position.y += e->velocity.y;
                     spriteUpdate(&e->sprite, 1.0f / 50.0f);
                     
                     float dist = vector2fMagnitude(e->velocity);
@@ -1237,7 +1236,40 @@ void iwbtgUpdate(Iwbtg* iw)
                         case EntityType_fruit:
                             //e->sprite.angle += 0.01 * PI;
                             break;
+                            
+                        case EntityType_movingPlatform: {
+                        
+                            if(entityCheckPlayerCollision(e, &iw->player))
+                            {
+                                Vector2f pos = iw->player.position;
+                                if(iw->player.position.y < e->position.y - 24
+                                   && iw->player.velocity.y > 0)
+                                {
+                                    iw->player.position.y = e->position.y - 32;
+                                    if(playerIsCollidingWithGround(&iw->player, iw, 0, 0))
+                                        iw->player.position = pos;
+                                }
+                            }
+                            
+                            Rectanglef hitbox = { 0, 0, e->sprite.size.x, e->sprite.size.y };
+                            
+                            if(rectangleIsCollidingWithGround(&hitbox, iw, e->position.x, e->position.y))
+                                e->velocity = vector2fMultiply(e->velocity, -1);
+                            
+                            e->position.y--;
+                            if(entityCheckPlayerCollision(e, &iw->player))
+                            {
+                                iw->player.position = vector2fAdd(iw->player.position, e->velocity);
+                                if(playerIsCollidingWithGround(&iw->player, iw, 0, 0))
+                                    iw->player.position = vector2fSubtract(iw->player.position, e->velocity);
+                            }
+                            e->position.y++;
+                            
+                        } break;
                     }
+                    
+                    e->velocity = vector2fAdd(e->velocity, e->acceleration);
+                    e->position = vector2fAdd(e->position, e->velocity);
                     
                     controllerUpdate(e->controller, e, iw, dt);
                 }
