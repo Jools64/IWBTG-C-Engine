@@ -1,6 +1,6 @@
 #define PI 3.141592
 
-//#define NO_MUSIC
+#define NO_MUSIC
 
 #include "engine/engine.h"
 #include "defaultMap.h"
@@ -10,6 +10,11 @@
 // TODO: Stop being so lazy and break up this into headers and c source files.
 
 // HEADER
+
+#define MAX_ENTITIES 2048
+#define MAP_WIDTH 30
+#define MAP_HEIGHT 17
+#define GRID_SIZE 32
 
 typedef enum
 {
@@ -27,7 +32,8 @@ typedef enum
 {
     ControllerType_none,
     ControllerType_trap,
-    ControllerType_inOut
+    ControllerType_inOut,
+    ControllerType_chain
 } ControllerType;
 
 typedef struct ControllerTrap
@@ -36,6 +42,7 @@ typedef struct ControllerTrap
     float speed;
     float activationDistance;
     float activationWidth;
+    int activationFrame;
     unsigned char activated;
 } ControllerTrap;
 
@@ -49,6 +56,7 @@ typedef struct ControllerInOut
     Vector2f basePosition;
 } ControllerInOut;
 
+typedef struct Controller Controller;
 typedef struct Controller
 {
     ControllerType type;
@@ -57,6 +65,7 @@ typedef struct Controller
         ControllerTrap trap;
         ControllerInOut inOut;
     };
+    //Entity* owner;
 } Controller;
 
 typedef struct
@@ -68,7 +77,8 @@ typedef struct
     float spin, spinFriction, friction;
     float animationTimer;
     float depth;
-    Controller controller;
+    Controller* controller;
+    Controller controllerData;
 } Entity;
 
 typedef struct 
@@ -102,7 +112,7 @@ typedef enum
 typedef struct
 {
     Vector2f playerPosition;
-    int room;
+    Vector2i room;
     int deaths;
     double time;
 } SaveState;
@@ -112,11 +122,8 @@ typedef struct
     Grid entities;
     Grid ground;
     Grid controllers;
+    Entity* entityMap[MAP_WIDTH][MAP_HEIGHT];
 } Level;
-
-#define MAX_ENTITIES 2048
-#define MAP_WIDTH 30
-#define MAP_HEIGHT 17
 
 typedef struct Iwbtg
 {
@@ -143,8 +150,10 @@ typedef struct Iwbtg
     
     Entity entities[MAX_ENTITIES];
     Entity* entityDrawOrder[MAX_ENTITIES];
-    int lastEntityPosition, entityDrawCount, room,
-        activeSaveSlot;
+    int lastEntityPosition, entityDrawCount,
+        activeSaveSlot, frameCount;
+    Vector2i room;
+    
     float time;
     
     GameState state;
@@ -162,7 +171,7 @@ typedef struct Iwbtg
 
 char* getCurrentMapName(Iwbtg* iw, char* string, int stringLength)
 {
-    snprintf(string, stringLength, "assets/%d.map", iw->room);
+    snprintf(string, stringLength, "assets/%dx%d.map", iw->room.x, iw->room.y);
     return string;
 }
 
@@ -220,7 +229,8 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
     e->type = type;
     e->animationTimer = 0;
     e->depth = 0;
-    e->controller.type = ControllerType_none;
+    e->controller = &e->controllerData;
+    e->controller->type = ControllerType_none;
     
     // Important: All entities must have a sprite. (Or I need to implement behavior to handle this)
     switch(type)
@@ -294,6 +304,48 @@ void destroyAllEntities(Iwbtg* iw)
         iw->entities[i].active = false;
 }
 
+void addChainLink(Level* l, unsigned char chainLinks[MAP_WIDTH][MAP_HEIGHT], int x, int y, Controller** joinedController)
+{
+    if(x > 0 && y > 0 && x < MAP_WIDTH && y < MAP_HEIGHT 
+       && chainLinks[x][y] == 0)
+    {
+        int c = l->controllers.data[x + (y * l->entities.width)] - 1;
+
+        if(c == 63) // chain link
+        {
+            chainLinks[x][y] = true;
+            addChainLink(l, chainLinks, x-1, y, joinedController);
+            addChainLink(l, chainLinks, x+1, y, joinedController);
+            addChainLink(l, chainLinks, x, y-1, joinedController);
+            addChainLink(l, chainLinks, x, y+1, joinedController);
+        }
+        else if(c != -1 && l->entityMap[x][y]) // controller is something other than chain link
+            *joinedController = l->entityMap[x][y]->controller;
+    }
+}
+
+void resolveChain(Entity* e, Iwbtg* iw)
+{
+    unsigned char chainLinks[MAP_WIDTH][MAP_HEIGHT];
+    Controller* joinedController = 0;
+    memset(chainLinks, 0, MAP_WIDTH * MAP_HEIGHT * sizeof(unsigned char));
+    addChainLink(&iw->level, chainLinks, e->position.x / 32, e->position.y / 32, &joinedController);
+    
+    if(joinedController != 0)
+    {
+        for(int i = 0; i < MAP_WIDTH; ++i)
+            for(int t = 0; t < MAP_HEIGHT; ++t)
+            {
+                if(chainLinks[i][t])
+                {
+                    Entity* e = iw->level.entityMap[i][t];
+                    if(e)
+                        e->controller = joinedController;
+                }
+            }
+    }
+}
+
 void loadMap(Iwbtg* iw, char* file)
 {
     FILE* f;
@@ -301,20 +353,23 @@ void loadMap(Iwbtg* iw, char* file)
     {
         fread(iw->level.entities.data, sizeof(int) * MAP_WIDTH * MAP_HEIGHT, 1, f);
         fread(iw->level.controllers.data, sizeof(int) * MAP_WIDTH * MAP_HEIGHT, 1, f);
+        memset(iw->level.ground.data, 0, sizeof(int) * MAP_WIDTH * MAP_HEIGHT);
+        memset(iw->level.entityMap, 0, sizeof(Entity*) * MAP_WIDTH * MAP_HEIGHT); 
         fclose(f);
     }
     else
     {
         memcpy(iw->level.entities.data, defaultMap, sizeof(int) * MAP_WIDTH * MAP_HEIGHT);
         memset(iw->level.ground.data, 0, sizeof(int) * MAP_WIDTH * MAP_HEIGHT);
-        memset(iw->level.controllers.data, 0, sizeof(int) * MAP_WIDTH * MAP_HEIGHT);
+        memset(iw->level.ground.data, 0, sizeof(int) * MAP_WIDTH * MAP_HEIGHT);
+        memset(iw->level.entityMap, 0, sizeof(Entity*) * MAP_WIDTH * MAP_HEIGHT); 
         iw->editor.enabled = true;
     }
     
     destroyAllEntities(iw);
     
-    for(int i = 0; i < iw->level.entities.width; ++i)
-        for(int t = 0; t < iw->level.entities.height; ++t)
+    for(int t = 0; t < iw->level.entities.height; ++t)
+        for(int i = 0; i < iw->level.entities.width; ++i)
         {
             int index = i + (t * iw->level.entities.width);
             int typeIndex = iw->level.entities.data[index] - 1;
@@ -322,7 +377,7 @@ void loadMap(Iwbtg* iw, char* file)
             int x = 32 * i,
                 y = 32 * t;
             
-            Entity* e;
+            Entity* e = 0;
             
             if(typeIndex == 0)
             {
@@ -346,35 +401,69 @@ void loadMap(Iwbtg* iw, char* file)
                 iw->player.position.y = y;
             }
             
+            iw->level.entityMap[i][t] = e;
+            
             // Add a controller if one has been applied to the entity
             if(e)
             {
                 typeIndex = iw->level.controllers.data[index] - 1;
                 
-                if(typeIndex >= 0 && typeIndex <= 3)
+                e->controller = &e->controllerData;
+                
+                if(typeIndex >= 0 && typeIndex <= 3) // Fast trap
                 {
-                    e->controller.type = ControllerType_trap;
-                    e->controller.trap.direction = PI * 0.5f * typeIndex;
-                    e->controller.trap.activationDistance = 150;
-                    e->controller.trap.activationWidth = 32;
-                    e->controller.trap.speed = 16;
-                    e->controller.trap.activated = 0;
+                    e->controller->type = ControllerType_trap;
+                    e->controller->trap.direction = PI * 0.5f * typeIndex;
+                    e->controller->trap.activationDistance = 400;
+                    e->controller->trap.activationWidth = 32;
+                    e->controller->trap.speed = 32;
+                    e->controller->trap.activated = 0;
                 }
-                else if(typeIndex >= 4 && typeIndex <= 5)
+                else if(typeIndex >= 4 && typeIndex <= 7) // Medium trap
                 {
-                    e->controller.type = ControllerType_inOut;
-                    e->controller.inOut.direction = PI * 0.5;
-                    e->controller.inOut.speed = 1;
-                    if(typeIndex == 5)
-                        e->controller.inOut.speed = 2;
-                    e->controller.inOut.distance = 32;
-                    e->controller.inOut.timer = 0;
-                    e->controller.inOut.basePosition = e->position;
+                    e->controller->type = ControllerType_trap;
+                    e->controller->trap.direction = PI * 0.5f * (typeIndex - 4);
+                    e->controller->trap.activationDistance = 400;
+                    e->controller->trap.activationWidth = 32;
+                    e->controller->trap.speed = 16;
+                    e->controller->trap.activated = 0;
+                }
+                else if(typeIndex >= 8 && typeIndex <= 11) // Medium trap
+                {
+                    e->controller->type = ControllerType_trap;
+                    e->controller->trap.direction = PI * 0.5f * (typeIndex - 8);
+                    e->controller->trap.activationDistance = 400;
+                    e->controller->trap.activationWidth = 32;
+                    e->controller->trap.speed = 4;
+                    e->controller->trap.activated = 0;
+                }
+                else if(typeIndex >= 12 && typeIndex <= 13) // In out
+                {
+                    e->controller->type = ControllerType_inOut;
+                    e->controller->inOut.direction = PI * 0.5;
+                    e->controller->inOut.speed = 1;
+                    if(typeIndex == 13)
+                        e->controller->inOut.speed = 2;
+                    e->controller->inOut.distance = 32;
+                    e->controller->inOut.timer = 0;
+                    e->controller->inOut.basePosition = e->position;
+                }
+                else if(typeIndex == 63) // Chaining controllers
+                {
+                    e->controller->type = ControllerType_chain;
                 }
             }
         }
         
     musicPlay(assetsGetMusic(&iw->game, "forestMusic"), 0.7, &iw->game);
+    
+    for(int t = 0; t < iw->level.entities.height; ++t)
+        for(int i = 0; i < iw->level.entities.width; ++i)
+        {
+            Entity* e = iw->level.entityMap[i][t];
+            if(e && e->controller->type == ControllerType_chain)
+                resolveChain(e, iw);
+        }
 }
 
 void saveMap(Iwbtg* iw, char* file)
@@ -593,7 +682,7 @@ void playerUpdate(Player* p, Iwbtg* iw)
             {
                 p->velocity.y = -p->doubleJumpSpeed;
                 p->doubleJumpAvailible = false;
-                soundPlay(assetsGetSound(&iw->game, "double_jump"), 1);
+                soundPlay(assetsGetSound(&iw->game, "doubleJump"), 1);
             }
         }
 
@@ -643,7 +732,6 @@ void playerUpdate(Player* p, Iwbtg* iw)
         
         // Move the player
         p->position.x += p->velocity.x;
-        p->position.x = clampi(p->position.x, -16, iw->game.size.x-16);
         if(playerIsCollidingWithGround(p, iw, 0, 0))
         {
             for(int i = 0; i <= abs(p->velocity.x) + 1; ++i)
@@ -671,12 +759,51 @@ void playerUpdate(Player* p, Iwbtg* iw)
             }
             p->velocity.y = 0;
         }
+        
+        // Warp the player if at the edge of a screen
+        unsigned char warped = 0;
+        
+        if(p->position.x < -16)
+        {
+            p->position.x = iw->game.size.x - 16;
+            warped = 1;
+            iw->room.x--;
+        }
+        
+        if(p->position.y < -16)
+        {
+            p->position.y = iw->game.size.y - 16;
+            warped = 1;
+            iw->room.y--;
+        }
+        
+        if(p->position.x > iw->game.size.x - 16)
+        {
+            p->position.x = -16;
+            warped = 1;
+            iw->room.x++;
+        }
+        
+        if(p->position.y > iw->game.size.y - 16)
+        {
+            p->position.y = -16;
+            warped = 1;
+            iw->room.y++;
+        }
+        
+        if(warped)
+        {
+            char buffer[128];
+            Vector2f playerPosition = p->position;
+            loadMap(iw, getCurrentMapName(iw, buffer, 128));
+            p->position = playerPosition;
+        }
     }
     
 	Entity* warp;
     if(warp = playerCheckCollision(p, iw, EntityType_warp))
     {
-        iw->room++;
+        iw->room.y--;
         char buffer[128];
         loadMap(iw, getCurrentMapName(iw, buffer, 128));
         p->position.x = warp->position.x + 64 - 16;
@@ -726,6 +853,8 @@ void iwbtgInit(Iwbtg* iw)
     
     MenuItem* mi;
     
+    iw->frameCount = 0;
+    
     // MAIN MENU
     menuInit(&iw->mainMenu, iw->game.size.x / 2, 540 - 230, iw);
     iw->mainMenu.spacing.y = 15;
@@ -765,7 +894,8 @@ void iwbtgInit(Iwbtg* iw)
     
     playerInit(&iw->player, 64, 128 + 32, iw);
     iw->saveState.playerPosition = iw->player.position;
-    iw->room = iw->saveState.room = 1;
+    Vector2i zero = {0};
+    iw->room = iw->saveState.room = zero;
     
     musicPlayOnce(assetsGetMusic(&iw->game, "menuMusic"), 0.5, &iw->game);
 }
@@ -792,13 +922,19 @@ void iwbtgLoad(Iwbtg* iw)
     assetsLoadTexture(g, "assets/controllers.png", "controllers");
     
     assetsLoadSound(g, "assets/jump.wav", "jump");
-    assetsLoadSound(g, "assets/double_jump.wav", "double_jump");
+    assetsLoadSound(g, "assets/double_jump.wav", "doubleJump");
     assetsLoadSound(g, "assets/shoot.wav", "shoot");
     assetsLoadSound(g, "assets/death.wav", "death");
+    assetsLoadSound(g, "assets/trap.wav", "trap");
     
     assetsLoadMusic(g, "assets/forest_music.ogg", "forestMusic");
     assetsLoadMusic(g, "assets/menu_music.ogg", "menuMusic");
 }
+
+/*chainControllerActivation(Iwbtg* iw, int x, int y, Controller* c)
+{
+    int x = 
+}*/
 
 void controllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt)
 {
@@ -806,37 +942,46 @@ void controllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt)
     {
         case ControllerType_trap: {
         
-            ControllerTrap* trap = &e->controller.trap;
+            ControllerTrap* trap = &e->controller->trap;
             
-            Vector2f pos = vector2fAdd(e->position, vector2fDivide(vector2iTof(e->sprite.size), 2));
-            Vector2f playerPos = {
-                iw->player.position.x + (iw->player.sprite.size.x / 2),
-                iw->player.position.y + (iw->player.sprite.size.y / 2)
-            };
             
             float dx = cosf(trap->direction);
             float dy = -sinf(trap->direction);
             
-            Vector2f activationRange = {
-                dx * trap->activationDistance, 
-                dy * trap->activationDistance
-            };
-            
-            Vector2f entityToPlayer = {
-                playerPos.x - pos.x,
-                playerPos.y - pos.y
-            };
-            
-            Vector2f a = vector2fNormalize(activationRange);
-            Vector2f b = vector2fDivide(entityToPlayer, trap->activationDistance);
-            
-            float dot = vector2fDot(a, b);
-            Vector2f playerOnActivation = vector2fAdd(vector2fMultiply(activationRange, dot), pos);
-                        
-            if(dot >= 0 && dot <= 1 && vector2fDistance(playerOnActivation, playerPos) < (trap->activationWidth / 2))
-                trap->activated = true;
+            // Only check for activation on the owner of the controller
+            if(c == &e->controllerData && !trap->activated)
+            {
+                Vector2f pos = vector2fAdd(e->position, vector2fDivide(vector2iTof(e->sprite.size), 2));
+                Vector2f playerPos = {
+                    iw->player.position.x + (iw->player.sprite.size.x / 2),
+                    iw->player.position.y + (iw->player.sprite.size.y / 2)
+                };
+                
+                Vector2f activationRange = {
+                    dx * trap->activationDistance, 
+                    dy * trap->activationDistance
+                };
+                
+                Vector2f entityToPlayer = {
+                    playerPos.x - pos.x,
+                    playerPos.y - pos.y
+                };
+                
+                Vector2f a = vector2fNormalize(activationRange);
+                Vector2f b = vector2fDivide(entityToPlayer, trap->activationDistance);
+                
+                float dot = vector2fDot(a, b);
+                Vector2f playerOnActivation = vector2fAdd(vector2fMultiply(activationRange, dot), pos);
+                            
+                if(dot >= 0 && dot <= 1 && vector2fDistance(playerOnActivation, playerPos) < (trap->activationWidth / 2))
+                {
+                    trap->activated = true;
+                    soundPlay(assetsGetSound(&iw->game, "trap"), 1);
+                    trap->activationFrame = iw->frameCount;
+                }
+            }
 
-            if(trap->activated)
+            if(trap->activated && trap->activationFrame < iw->frameCount)
             {
                 e->velocity.x = trap->speed * dx;
                 e->velocity.y = trap->speed * dy;
@@ -845,7 +990,7 @@ void controllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt)
         
         case ControllerType_inOut: {
             
-            ControllerInOut* io = &e->controller.inOut;
+            ControllerInOut* io = &e->controller->inOut;
             
             io->timer += dt * io->speed;
             float phase = fabs(sinf(io->timer));
@@ -864,6 +1009,8 @@ void iwbtgUpdate(Iwbtg* iw)
     Game* g = &iw->game;
     float dt = (float)1 / 50;
     iw->time += dt;
+    
+    iw->frameCount++;
     
     if(checkKeyPressed(g, KEY_FULLSCREEN_TOGGLE))
         gameFullscreenToggle(g);
@@ -990,7 +1137,7 @@ void iwbtgUpdate(Iwbtg* iw)
                             break;
                     }
                     
-                    controllerUpdate(&e->controller, e, iw, dt);
+                    controllerUpdate(e->controller, e, iw, dt);
                 }
             }
         }
@@ -1164,7 +1311,7 @@ void iwbtgDraw(Iwbtg* iw)
             spriteDraw(g, &iw->player.sprite, iw->player.position.x, iw->player.position.y);
         
         char roomText[128];
-        snprintf(roomText, 128, "ROOM %d", iw->room);
+        snprintf(roomText, 128, "ROOM %d,%d", iw->room.x, iw->room.y);
         drawText(&iw->game, 0, roomText, 8, 8);
         
         editorDraw(iw);

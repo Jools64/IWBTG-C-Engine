@@ -100,7 +100,7 @@ void updateMenu(Menu* m, Iwbtg* iw, float delta)
         {
             if(checkKeyPressed(g, KEY_JUMP) || checkKeyPressed(g, KEY_SHOOT))
             {
-                soundPlay(assetsGetSound(&iw->game, "double_jump"), 1);
+                soundPlay(assetsGetSound(&iw->game, "doubleJump"), 1);
                 if(m->selected && m->selected->function)
                     m->selected->function(m->selected, m->selected->functionData);
             }
