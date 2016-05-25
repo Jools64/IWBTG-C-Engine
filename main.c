@@ -1,6 +1,6 @@
 #define PI 3.141592
 
-#define NO_MUSIC
+//#define NO_MUSIC
 
 #include "engine/engine.h"
 #include "defaultMap.h"
@@ -65,6 +65,7 @@ typedef struct Controller
         ControllerTrap trap;
         ControllerInOut inOut;
     };
+    unsigned char hasChains;
     //Entity* owner;
 } Controller;
 
@@ -230,6 +231,7 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
     e->animationTimer = 0;
     e->depth = 0;
     e->controller = &e->controllerData;
+    e->controller->hasChains = false;
     e->controller->type = ControllerType_none;
     
     // Important: All entities must have a sprite. (Or I need to implement behavior to handle this)
@@ -333,6 +335,7 @@ void resolveChain(Entity* e, Iwbtg* iw)
     
     if(joinedController != 0)
     {
+        joinedController->hasChains = true;
         for(int i = 0; i < MAP_WIDTH; ++i)
             for(int t = 0; t < MAP_HEIGHT; ++t)
             {
@@ -480,6 +483,9 @@ void loadGame(Iwbtg* iw)
     
     char saveFileName[128];
     snprintf(saveFileName, 128, "save%d.sav", iw->activeSaveSlot);
+    
+    iw->saveState.room.x = -1;
+    iw->saveState.room.y = 0;
     
     FILE* f;
     if(f = fopen(saveFileName, "r"))
@@ -894,8 +900,8 @@ void iwbtgInit(Iwbtg* iw)
     
     playerInit(&iw->player, 64, 128 + 32, iw);
     iw->saveState.playerPosition = iw->player.position;
-    Vector2i zero = {0};
-    iw->room = iw->saveState.room = zero;
+    Vector2i startingRoom = {-1, 0};
+    iw->room = iw->saveState.room = startingRoom;
     
     musicPlayOnce(assetsGetMusic(&iw->game, "menuMusic"), 0.5, &iw->game);
 }
@@ -981,7 +987,7 @@ void controllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt)
                 }
             }
 
-            if(trap->activated && trap->activationFrame < iw->frameCount)
+            if(trap->activated && (trap->activationFrame < iw->frameCount || !c->hasChains))
             {
                 e->velocity.x = trap->speed * dx;
                 e->velocity.y = trap->speed * dy;
