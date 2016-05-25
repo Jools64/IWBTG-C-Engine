@@ -9,14 +9,26 @@ bool checkRectangleIntersectSprite(Rectanglef* r, Vector2f* rp, Sprite* s, Vecto
     int deltaY = -sp->y;
     
     // Compute the rotation transformation
-    float xxc = cosf(s->angle);
-    float yxc = - sinf(s->angle);
-    float xyc = cosf(s->angle + (PI * 1.5));
-    float yyc = - sinf(s->angle + (PI * 1.5));
+    double xxc, yxc, xyc, yyc;
+
+    if(s->angle == 0) // For absolute precision when no rotation has taken place
+    {
+        xxc = 1;
+        yxc = 0;
+        xyc = 0;
+        yyc = 1;
+    }
+    else
+    {
+        xxc = cos(s->angle);
+        yxc = - sin(s->angle);
+        xyc = cos(s->angle + (PI * 1.5));
+        yyc = - sin(s->angle + (PI * 1.5));
+    }
     
     // Iterate through every pixel in the rectangle
-    for(int i = rp->x + r->x; i <= rp->x + r->x + r->w; ++i)
-        for(int t = rp->y + r->y; t <= rp->y + r->y + r->h; ++t)
+    for(int i = rp->x + r->x; i < rp->x + r->x + r->w; ++i)
+        for(int t = rp->y + r->y; t < rp->y + r->y + r->h; ++t)
         {
             bool collision = false;
             
@@ -54,3 +66,4 @@ bool checkRectangleIntersectSprite(Rectanglef* r, Vector2f* rp, Sprite* s, Vecto
         
     return false;
 }
+

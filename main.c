@@ -1,6 +1,6 @@
-#define PI 3.141592
+#define PI 3.14159265359
 
-//#define NO_MUSIC
+#define NO_MUSIC
 
 #include "engine/engine.h"
 #include "defaultMap.h"
@@ -26,6 +26,7 @@ typedef enum
     EntityType_particle,
     EntityType_playerBullet,
     EntityType_fruit,
+    EntityType_movingPlatform
 } EntityType;
 
 typedef enum
@@ -211,6 +212,77 @@ int entityCount(Iwbtg* iw, EntityType type)
     return count;
 }
 
+/*
+// For debugging the per pixel collisions
+bool checkRectangleIntersectSpriteDraw(Rectanglef* r, Vector2f* rp, Sprite* s, Vector2f* sp, Iwbtg* iw)
+{
+    // Get the sprite frame
+    int tX = (s->frame * s->size.x) % s->texture->size.x,
+        tY = ((s->frame * s->size.x) / s->texture->size.x) * s->size.y;
+        
+    int deltaX = -sp->x;
+    int deltaY = -sp->y;
+    
+    double xxc, yxc, xyc, yyc;
+
+    if(s->angle == 0) // For absolute precision when no rotation has taken place
+    {
+        xxc = 1;
+        yxc = 0;
+        xyc = 0;
+        yyc = 1;
+    }
+    else
+    {
+        xxc = cos(s->angle);
+        yxc = - sin(s->angle);
+        xyc = cos(s->angle + (PI * 1.5));
+        yyc = - sin(s->angle + (PI * 1.5));
+    }
+    
+    // Iterate through every pixel in the rectangle
+    for(int i = rp->x + r->x; i <= rp->x + r->x + r->w; ++i)
+        for(int t = rp->y + r->y; t <= rp->y + r->y + r->h; ++t)
+        {
+            bool collision = false;
+            
+            Texture* texture = s->texture;
+            double x = i + deltaX, 
+                  y = t + deltaY, 
+                  sx = tX, 
+                  sy = tY;
+
+            double ox = sx + s->origin.x;
+            double oy = sy + s->origin.y;
+            
+            x += sx;
+            y += sy;
+            
+            double ix = (x) - ox;
+            double iy = (y) - oy;
+            
+            x = (((xxc * ix) + (xyc * iy))/s->scale.x) + ox;
+            y = (((yxc * ix) + (yyc * iy))/s->scale.y) + oy;
+            
+            if(x >= 0 && x >= sx 
+            && y >= 0 && y >= sy
+            && x < s->texture->size.x && x < sx + s->size.x
+            && y < s->texture->size.y && y < sy + s->size.y)
+            {
+                unsigned char* data = (unsigned char*) s->texture->surface->pixels;
+                int index = (((int)x + ((int)y * s->texture->size.x))*4) + 3;
+                collision = data[index] > 0;
+                if(collision)
+                    SDL_RenderDrawPoint(iw->game.renderer, i, t);
+            }
+            
+            //if(collision)
+                //return true;
+        }
+        
+    return false;
+}*/
+
 Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
 {
     Entity* e = getFirstFreeEntity(iw);
@@ -270,6 +342,11 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
             int frames[] = { 0, 1 };
             spriteAddAnimation(&e->sprite, Animations_default, &frames[0], 2, 6);
             spritePlayAnimation(&e->sprite, Animations_default);
+            break;
+            
+        case EntityType_movingPlatform:
+            spriteInit(&e->sprite, assetsGetTexture(&iw->game, "movingPlatform"), 32, 16);
+            e->depth = -1;
             break;
     }
     
@@ -403,6 +480,8 @@ void loadMap(Iwbtg* iw, char* file)
                 iw->player.position.x = x;
                 iw->player.position.y = y;
             }
+            else if(typeIndex == 7)
+                e = createEntity(iw, EntityType_movingPlatform, x, y);
             
             iw->level.entityMap[i][t] = e;
             
@@ -562,6 +641,19 @@ Entity* playerCheckCollision(Player* p, Iwbtg* iw, EntityType type)
     return 0;
 }
 
+Entity* playerCheckCollisionAtOffset(Player* p, Iwbtg* iw, EntityType type, int x, int y)
+{   
+    Vector2f pos = p->position;
+    p->position.x += x;
+    p->position.y += y;
+    
+    Entity* result = playerCheckCollision(p, iw, type);
+    
+    p->position = pos;
+    
+    return result;
+}
+
 bool rectangleIsCollidingWithGround(Rectanglef* r, Iwbtg* iw, float offsetX, float offsetY)
 {
     Rectanglef block = { 0.0f, 0.0f, 32.0f, 32.0f };
@@ -591,7 +683,8 @@ bool rectangleIsCollidingWithGround(Rectanglef* r, Iwbtg* iw, float offsetX, flo
 
 bool playerIsCollidingWithGround(Player* p, Iwbtg* iw, float offsetX, float offsetY)
 {
-    return rectangleIsCollidingWithGround(&p->hitBox, iw, p->position.x + offsetX, p->position.y + offsetY);
+    return rectangleIsCollidingWithGround(&p->hitBox, iw, p->position.x + offsetX, p->position.y + offsetY)
+    || playerCheckCollisionAtOffset(p, iw, EntityType_movingPlatform, offsetX, offsetY);
 }
 
 void playerInit(Player* p, float x, float y, Iwbtg* iw)
@@ -663,10 +756,7 @@ void playerUpdate(Player* p, Iwbtg* iw)
         }
 		p->position.y = ty;
         
-        // Gravity
-        p->velocity.y += p->gravity;
-        if(p->velocity.y > p->maxFallSpeed)
-            p->velocity.y = p->maxFallSpeed;
+        
         
         // Ground check
         bool onGround = playerIsCollidingWithGround(p, iw, 0, 1);
@@ -695,6 +785,11 @@ void playerUpdate(Player* p, Iwbtg* iw)
         if(checkKeyReleased(g, KEY_JUMP))
 			if(p->velocity.y < 0)
 				p->velocity.y *= p->jumpDampening;
+        
+        // Gravity
+        p->velocity.y += p->gravity;
+        if(p->velocity.y > p->maxFallSpeed)
+            p->velocity.y = p->maxFallSpeed;
         
         if(checkKeyPressed(g, KEY_SHOOT))
         {
@@ -926,6 +1021,7 @@ void iwbtgLoad(Iwbtg* iw)
     assetsLoadTexture(g, "assets/fruit.png", "fruit");
     assetsLoadTexture(g, "assets/landscape.png", "landscape");
     assetsLoadTexture(g, "assets/controllers.png", "controllers");
+    assetsLoadTexture(g, "assets/moving_platform.png", "movingPlatform");
     
     assetsLoadSound(g, "assets/jump.wav", "jump");
     assetsLoadSound(g, "assets/double_jump.wav", "doubleJump");
@@ -1304,9 +1400,12 @@ void iwbtgDraw(Iwbtg* iw)
                             s->frame = br;
                             spriteDraw(g, s, e->position.x + 16, e->position.y + 16);
                         } break;
-                            
+                          
                         default:
                             spriteDraw(g, &e->sprite, e->position.x, e->position.y);
+                            
+                            //Rectanglef r = {0.0f, 0.0f, 64.0f, 64.0f};
+                            //checkRectangleIntersectSpriteDraw(&r, &e->position, &e->sprite, &e->position, iw);
                             break;
                     }
                 }
