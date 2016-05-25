@@ -227,7 +227,8 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
     {
         case EntityType_block:
             spriteInit(&e->sprite, assetsGetTexture(&iw->game, "blockTiles"), 16, 16);
-            break;
+            e->depth = -1;
+			break;
             
         case EntityType_spike:
             spriteInit(&e->sprite, assetsGetTexture(&iw->game, "spike"), 32, 32);
