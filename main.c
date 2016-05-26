@@ -581,7 +581,7 @@ int main(int argc, char** argv)
     Iwbtg* iwbtg = new(Iwbtg);
     Game* game = &iwbtg->game;
     
-    ScriptState ss = parseScript("speed = 300\ndirection = 23");
+    ScriptState ss = parseScript("speed = 300\ndirection=23 gravity = 32.435");
     for(int i = 0; i < ss.valueCount; ++i)
         printf("%s: \"%f\"\n", ss.values[i].key, ss.values[i].number);
     

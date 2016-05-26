@@ -64,12 +64,21 @@ bool charIsIdentifierLegal(char c)
 }
 
 
-bool getNextCharacter(ScriptState* s, char** c)
+bool getCurrentCharacter(ScriptState* s, char** c)
 {
-    if(s->readPosition == s->sourceLength)
+    if(s->readPosition == s->sourceLength-1)
         return 0;
     
-    *c = &s->source[s->readPosition++];
+    *c = &s->source[s->readPosition];
+    return 1;
+}
+
+bool getNextCharacter(ScriptState* s, char** c)
+{
+    if(s->readPosition == s->sourceLength-1)
+        return 0;
+    
+    *c = &s->source[++s->readPosition];
     return 1;
 }
 
@@ -90,7 +99,7 @@ bool getNextToken(ScriptState* s, Token* t)
     char* valueStart = 0;
     int valueLength = 0;
     
-    if(getNextCharacter(s, &charPointer))
+    if(getCurrentCharacter(s, &charPointer))
         c = *charPointer;
     else 
         c = EOFC; // End of file
@@ -117,8 +126,7 @@ bool getNextToken(ScriptState* s, Token* t)
                 }
                 else if(c == '=')
                 {
-                    t->type = TokenType_assignment;
-                    return true;
+                    readState = 4;
                 }
                 else if(c == EOFC)
                 {
@@ -134,14 +142,12 @@ bool getNextToken(ScriptState* s, Token* t)
                 {
                     valueLength++;
                 }
-                else if(charIsWhiteSpace(c) || c == EOFC)
+                else
                 {
                     t->type = TokenType_identifier;
                     readState = 100;
                     continue;
                 }
-                else
-                    tokenError(c);
                     
                 break;
                 
@@ -171,14 +177,19 @@ bool getNextToken(ScriptState* s, Token* t)
                 {
                     valueLength++;
                 }
-                else if(charIsWhiteSpace(c) || c == EOFC)
+                else
                 {
                     t->type = TokenType_number;
                     readState = 100;
                     continue;
                 }
-                else
-                    tokenError(c);
+
+                break;
+                
+            case 4: // Assignment
+                // Check here for ==, etc.
+                t->type = TokenType_assignment;
+                return true;
                 break;
                 
             case 100: // Copy value
