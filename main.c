@@ -174,6 +174,10 @@ void iwbtgInit(Iwbtg* iw)
     fontInit(&iw->game.font, assetsGetTexture(&iw->game, "font"), 24, 32, "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890,.!?\"'/\\<>()=:");
     fontSetAllLetterWidth(&iw->game.font, 20);
     
+    fontInit(&iw->fontSmall, assetsGetTexture(&iw->game, "fontSmall"), 12, 16,
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890,.!?\"'/\\<>()=:");
+    fontSetAllLetterWidth(&iw->fontSmall, 8);
+    
     editorInit(iw);
     
     iw->blockTexture = assetsGetTexture(&iw->game, "block");
@@ -251,6 +255,7 @@ void iwbtgLoad(Iwbtg* iw)
     assetsLoadTexture(g, "assets/landscape.png", "landscape");
     assetsLoadTexture(g, "assets/controllers.png", "controllers");
     assetsLoadTexture(g, "assets/moving_platform.png", "movingPlatform");
+    assetsLoadTexture(g, "assets/font_small.png", "fontSmall");
     
     assetsLoadSound(g, "assets/jump.wav", "jump");
     assetsLoadSound(g, "assets/double_jump.wav", "doubleJump");
@@ -378,8 +383,11 @@ void iwbtgDraw(Iwbtg* iw)
             spriteDraw(g, &iw->player.sprite, iw->player.position.x, iw->player.position.y);
         
         char roomText[128];
-        snprintf(roomText, 128, "ROOM %d,%d", iw->room.x, iw->room.y);
-        drawText(&iw->game, 0, roomText, 8, 8);
+        int mx = iw->game.input.mousePosition.x / 32;
+        int my = iw->game.input.mousePosition.y / 32;
+        snprintf(roomText, 128, "CURRENT ROOM %d,%d\nMOUSE TILE %d,%d", 
+                 iw->room.x, iw->room.y, mx, my);
+        drawText(&iw->game, &iw->fontSmall, roomText, 8, 8);
         
         editorDraw(iw);
         

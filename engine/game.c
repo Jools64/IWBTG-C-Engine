@@ -56,6 +56,8 @@ bool gameInit(Game* g, char* title, int width, int height, float scale)
     
     g->running = true;
     
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0"); // Nearest Neighbor
+    
     printf("Game initialized\n");
     return true;
 }

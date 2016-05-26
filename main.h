@@ -41,6 +41,8 @@ typedef struct Iwbtg
     Level level;
     Editor editor;
     
+    Font fontSmall;
+    
     Menu mainMenu, loadMenu;
     Menu* activeMenu;
     
