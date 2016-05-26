@@ -19,12 +19,12 @@
 #include "main.h"
 #include "collision.h"
 
+#include "script.c"
 #include "menu.c"
 #include "editor.c"
 #include "controller.c"
 #include "player.c"
 #include "entity.c"
-#include "script.c"
 
 Script* levelGetScriptAtPosition(Level* l, int x, int y)
 {
@@ -218,7 +218,7 @@ void loadMap(Iwbtg* iw, char* file)
             if(e)
             {
                 typeIndex = iw->level.controllers.data[index] - 1;
-                entitySetControllerFromTypeIndex(e, typeIndex);
+                entitySetControllerFromTypeIndex(e, typeIndex, iw);
             }
         }
         

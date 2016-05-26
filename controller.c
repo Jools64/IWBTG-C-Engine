@@ -1,6 +1,9 @@
-void entitySetControllerFromTypeIndex(Entity* e, int typeIndex)
+void entitySetControllerFromTypeIndex(Entity* e, int typeIndex, Iwbtg* iw)
 {
     e->controller = &e->controllerData;
+    
+    int x = e->position.x / GRID_SIZE;
+    int y = e->position.y / GRID_SIZE;
     
     if(typeIndex >= 0 && typeIndex <= 3) // Fast trap
     {
@@ -47,6 +50,14 @@ void entitySetControllerFromTypeIndex(Entity* e, int typeIndex)
             e->velocity.y = 1;
         else
             e->velocity.x = 1;
+        
+        Script* script = levelGetScriptAtPosition(&iw->level, x, y);
+        if(script)
+        {
+            ScriptState ss = parseScript(script->text);
+            e->velocity.x = scriptReadNumber(&ss, "hspeed", e->velocity.x);
+            e->velocity.y = scriptReadNumber(&ss, "vspeed", e->velocity.y);
+        }
     }
     else if(typeIndex == 63) // Chaining controllers
     {

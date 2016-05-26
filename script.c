@@ -43,6 +43,14 @@ typedef struct Token
     char value[MAX_TOKEN_LENGTH];
 } Token;
 
+double scriptReadNumber(ScriptState* ss, char* name, double defaultValue)
+{
+    for(int i = 0; i < ss->valueCount; ++i)
+        if(ss->values[i].type == ScriptValueType_number && strcmp(ss->values[i].key, name) == 0)
+            return ss->values[i].number;
+    return defaultValue;
+}
+
 bool charIsWhiteSpace(char c)
 {
     return (c == ' ' || c == '\n' || c == '\r' || c == '\t');

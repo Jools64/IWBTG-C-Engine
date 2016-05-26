@@ -43,7 +43,7 @@ typedef struct Controller
     unsigned char hasChains;
 } Controller;
 
-void entitySetControllerFromTypeIndex(Entity* e, int typeIndex);
+void entitySetControllerFromTypeIndex(Entity* e, int typeIndex, Iwbtg* iw);
 void controllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt);
 void addChainLink(Level* l, unsigned char chainLinks[MAP_WIDTH][MAP_HEIGHT], 
                   int x, int y, Controller** joinedController);
