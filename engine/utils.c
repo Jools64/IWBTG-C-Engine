@@ -121,8 +121,8 @@ float vector2fNormalizedDotProduct(Vector2f a, Vector2f b)
 bool rectanglefIntersectAt(float aX, float aY, Rectanglef* a,
                            float bX, float bY, Rectanglef* b)
 {
-    return !((aX + a->x) > b->w + (b->x + bX) 
-          || (aY + a->y) > b->h + (b->y + bY)
+    return !((aX + a->x) >= b->w + (b->x + bX) 
+          || (aY + a->y) >= b->h + (b->y + bY)
           || (aX + a->x) + a->w <= (b->x + bX) 
           || (aY + a->y) + a->h <= (b->y + bY));
 }

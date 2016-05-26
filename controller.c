@@ -1,46 +1,3 @@
-void addChainLink(Level* l, unsigned char chainLinks[MAP_WIDTH][MAP_HEIGHT], int x, int y, Controller** joinedController)
-{
-    if(x > 0 && y > 0 && x < MAP_WIDTH && y < MAP_HEIGHT 
-       && chainLinks[x][y] == 0)
-    {
-        int c = l->controllers.data[x + (y * l->entities.width)] - 1;
-
-        if(c == 63) // chain link
-        {
-            chainLinks[x][y] = true;
-            addChainLink(l, chainLinks, x-1, y, joinedController);
-            addChainLink(l, chainLinks, x+1, y, joinedController);
-            addChainLink(l, chainLinks, x, y-1, joinedController);
-            addChainLink(l, chainLinks, x, y+1, joinedController);
-        }
-        else if(c != -1 && l->entityMap[x][y]) // controller is something other than chain link
-            *joinedController = l->entityMap[x][y]->controller;
-    }
-}
-
-void resolveChain(Entity* e, Iwbtg* iw)
-{
-    unsigned char chainLinks[MAP_WIDTH][MAP_HEIGHT];
-    Controller* joinedController = 0;
-    memset(chainLinks, 0, MAP_WIDTH * MAP_HEIGHT * sizeof(unsigned char));
-    addChainLink(&iw->level, chainLinks, e->position.x / 32, e->position.y / 32, &joinedController);
-    
-    if(joinedController != 0)
-    {
-        joinedController->hasChains = true;
-        for(int i = 0; i < MAP_WIDTH; ++i)
-            for(int t = 0; t < MAP_HEIGHT; ++t)
-            {
-                if(chainLinks[i][t])
-                {
-                    Entity* e = iw->level.entityMap[i][t];
-                    if(e)
-                        e->controller = joinedController;
-                }
-            }
-    }
-}
-
 void entitySetControllerFromTypeIndex(Entity* e, int typeIndex)
 {
     e->controller = &e->controllerData;
@@ -82,6 +39,14 @@ void entitySetControllerFromTypeIndex(Entity* e, int typeIndex)
         e->controller->inOut.distance = 32;
         e->controller->inOut.timer = 0;
         e->controller->inOut.basePosition = e->position;
+    }
+    else if(typeIndex == 16 || typeIndex == 17)
+    {
+        e->controller->type = ControllerType_bounce;
+        if(typeIndex == 16)
+            e->velocity.y = 1;
+        else
+            e->velocity.x = 1;
     }
     else if(typeIndex == 63) // Chaining controllers
     {
@@ -154,5 +119,55 @@ void controllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt)
             e->position.y = io->basePosition.y + (dy * phase * io->distance) - (dy * io->distance);
             
         } break;
+        
+        case ControllerType_bounce: {
+            Rectanglef hitbox = { 0, 0, e->sprite.size.x, e->sprite.size.y };
+            
+            if(rectangleIsCollidingWithGround(&hitbox, iw, e->position.x, e->position.y))
+                e->velocity = vector2fMultiply(e->velocity, -1);
+        } break;
+    }
+}
+
+void addChainLink(Level* l, unsigned char chainLinks[MAP_WIDTH][MAP_HEIGHT], int x, int y, Controller** joinedController)
+{
+    if(x > 0 && y > 0 && x < MAP_WIDTH && y < MAP_HEIGHT 
+       && chainLinks[x][y] == 0)
+    {
+        int c = l->controllers.data[x + (y * l->entities.width)] - 1;
+
+        if(c == 63) // chain link
+        {
+            chainLinks[x][y] = true;
+            addChainLink(l, chainLinks, x-1, y, joinedController);
+            addChainLink(l, chainLinks, x+1, y, joinedController);
+            addChainLink(l, chainLinks, x, y-1, joinedController);
+            addChainLink(l, chainLinks, x, y+1, joinedController);
+        }
+        else if(c != -1 && l->entityMap[x][y]) // controller is something other than chain link
+            *joinedController = l->entityMap[x][y]->controller;
+    }
+}
+
+void resolveChain(Entity* e, Iwbtg* iw)
+{
+    unsigned char chainLinks[MAP_WIDTH][MAP_HEIGHT];
+    Controller* joinedController = 0;
+    memset(chainLinks, 0, MAP_WIDTH * MAP_HEIGHT * sizeof(unsigned char));
+    addChainLink(&iw->level, chainLinks, e->position.x / 32, e->position.y / 32, &joinedController);
+    
+    if(joinedController != 0)
+    {
+        joinedController->hasChains = true;
+        for(int i = 0; i < MAP_WIDTH; ++i)
+            for(int t = 0; t < MAP_HEIGHT; ++t)
+            {
+                if(chainLinks[i][t])
+                {
+                    Entity* e = iw->level.entityMap[i][t];
+                    if(e)
+                        e->controller = joinedController;
+                }
+            }
     }
 }

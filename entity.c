@@ -97,8 +97,6 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
         case EntityType_movingPlatform:
             spriteInit(&e->sprite, assetsGetTexture(&iw->game, "movingPlatform"), 32, 16);
             e->depth = -1;
-            
-            e->velocity.y = 1;
             break;
     }
     
@@ -218,7 +216,7 @@ void entityUpdate(Entity* e, Iwbtg* iw, float dt)
             break;
             
         case EntityType_movingPlatform: {
-        
+            
             if(entityCheckPlayerCollision(e, &iw->player))
             {
                 Vector2f pos = iw->player.position;
@@ -231,19 +229,13 @@ void entityUpdate(Entity* e, Iwbtg* iw, float dt)
                 }
             }
             
-            Rectanglef hitbox = { 0, 0, e->sprite.size.x, e->sprite.size.y };
-            
-            if(rectangleIsCollidingWithGround(&hitbox, iw, e->position.x, e->position.y))
-                e->velocity = vector2fMultiply(e->velocity, -1);
-            
-            e->position.y--;
-            if(entityCheckPlayerCollision(e, &iw->player))
+            if(entityCheckPlayerCollisionAtOffset(e, &iw->player, 0, -1)
+               && !entityCheckPlayerCollisionAtOffset(e, &iw->player, 0, 0))
             {
                 iw->player.position = vector2fAdd(iw->player.position, e->velocity);
-                if(playerIsCollidingWithGround(&iw->player, iw, 0, 0))
+                if(playerIsCollidingWithGround(&iw->player, iw, 0, e->velocity.y))
                     iw->player.position = vector2fSubtract(iw->player.position, e->velocity);
             }
-            e->position.y++;
             
         } break;
     }

@@ -3,9 +3,9 @@ void playerInit(Player* p, float x, float y, Iwbtg* iw)
     p->position.x = x;
     p->position.y = y;
     
-    p->hitBox.x = 10.0f;
+    p->hitBox.x = 9.0f;
     p->hitBox.y = 10.0f;
-    p->hitBox.w = 13.0f; 
+    p->hitBox.w = 14.0f; 
     p->hitBox.h = 22.0f;
     
     spriteInit(&p->sprite, assetsGetTexture(&iw->game, "kid"), 32, 32);

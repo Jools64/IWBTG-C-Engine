@@ -7,6 +7,7 @@ typedef enum
     ControllerType_none,
     ControllerType_trap,
     ControllerType_inOut,
+    ControllerType_bounce,
     ControllerType_chain
 } ControllerType;
 
@@ -42,8 +43,8 @@ typedef struct Controller
     unsigned char hasChains;
 } Controller;
 
+void entitySetControllerFromTypeIndex(Entity* e, int typeIndex);
+void controllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt);
 void addChainLink(Level* l, unsigned char chainLinks[MAP_WIDTH][MAP_HEIGHT], 
                   int x, int y, Controller** joinedController);
 void resolveChain(Entity* e, Iwbtg* iw);
-void entitySetControllerFromTypeIndex(Entity* e, int typeIndex);
-void controllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt);
