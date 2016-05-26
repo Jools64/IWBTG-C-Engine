@@ -32,7 +32,7 @@ typedef struct Asset
     AssetType type;
 } Asset;
 
-#define ASSET_ARRAY_SIZE 255
+#define ASSET_ARRAY_SIZE 256
 typedef struct
 {
     Asset* assetArray[ASSET_ARRAY_SIZE];

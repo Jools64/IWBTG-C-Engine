@@ -79,6 +79,7 @@ void gameHandleEvents(Game* g)
     memset(&g->input.mouseButtonsPressed, 0, MAX_MOUSE_BUTTONS);
     memset(&g->input.mouseButtonsReleased, 0, MAX_MOUSE_BUTTONS);
     
+    g->input.frameVoid = false;
     g->input.text[0] = '\0';
     
     while(SDL_PollEvent(&e))

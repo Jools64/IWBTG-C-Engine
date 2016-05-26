@@ -167,6 +167,7 @@ void fontInit(Font* font, Texture* texture, int letterWidth, int letterHeight,
     font->letterWidth[(int)' '] = letterWidth;
     font->lineSpacing = letterHeight + 3;
     font->letterSpacing = 2;
+    font->singleCase = true;
     int length = strlen(layout); 
     if(length < 255)
     {
@@ -214,6 +215,8 @@ void drawText(Game* g, Font* f, char* text, float x, float y)
     for(int i = 0; i < length; ++i)
     {
         char c = f->layout[(int)text[i]];
+        if(f->singleCase)
+            c = f->layout[toupper(text[i])];
         if(text[i] == '\n')
         {
             offsetX = 0;

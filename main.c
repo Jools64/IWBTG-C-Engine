@@ -7,6 +7,8 @@
 #define MAP_HEIGHT 17
 #define GRID_SIZE 32
 
+#include <ctype.h>
+
 #include "engine/engine.h"
 #include "controller.h"
 #include "entity.h"
@@ -22,6 +24,77 @@
 #include "controller.c"
 #include "player.c"
 #include "entity.c"
+
+void textInputInit(TextInput* ti)
+{
+    ti->text[0] = 0;
+    ti->length = 0;
+    ti->active = false;
+    ti->position.x = 256;
+    ti->position.y = 128;
+    ti->backspaceFrames = 0;
+}
+
+void textInputUpdate(TextInput* ti, Iwbtg* iw)
+{
+    Game* g = &iw->game;
+    
+    if(ti->active)
+    {
+        // Force upper case on all input
+        int i = 0;
+        
+        if(strlen(ti->text) + strlen(g->input.text) < TEXT_INPUT_MAX_LENGTH-1)
+            strcat(ti->text, g->input.text);
+        
+        if(g->input.keysPressed[SDLK_BACKSPACE & 255])
+        {
+            int length = strlen(ti->text);
+            if(length > 0)
+                ti->text[length-1] = '\0';
+            ti->backspaceFrames = 0;
+        }
+        
+        if(g->input.keys[SDLK_BACKSPACE & 255])
+        {
+            ti->backspaceFrames++;
+            if(ti->backspaceFrames > 25)
+            {
+                int length = strlen(ti->text);
+                if(length > 0)
+                    ti->text[length-1] = '\0';
+            }
+        }
+        
+        if(g->input.keysPressed[SDLK_RETURN & 255])
+        {
+            if(strlen("\n") + strlen(g->input.text) < TEXT_INPUT_MAX_LENGTH-1)
+            strcat(ti->text, "\n");
+        }
+        
+        if(g->input.keysPressed[SDLK_ESCAPE & 255])
+            ti->active = false;
+        
+        // Stop any input being interpreted by the game
+        g->input.frameVoid = true;
+    }
+}
+
+void textInputDraw(TextInput* ti, Iwbtg* iw)
+{
+    if(ti->active)
+    {
+        int padding = 8;
+        Vector2f size = getTextSize(&iw->fontSmall, ti->text);
+        
+        ti->position.x = (iw->game.size.x / 2) - (size.x / 2) - padding;
+        ti->position.y = (iw->game.size.y / 2) - (size.y / 2) - padding;
+        
+        rectangleDraw(&iw->game, ti->position.x - padding, ti->position.y - padding, 
+                      size.x + (padding * 2), size.y + (padding * 2) - 2, 0.2, 0.1, 0.3, 0.8);
+        drawText(&iw->game, &iw->fontSmall, ti->text, ti->position.x, ti->position.y);
+    }
+}
 
 char* getCurrentMapName(Iwbtg* iw, char* string, int stringLength)
 {
@@ -171,6 +244,8 @@ void menuFunctionLoadSave(MenuItem* mi, void* data)
 
 void iwbtgInit(Iwbtg* iw)
 {
+    textInputInit(&iw->textInput);
+    
     fontInit(&iw->game.font, assetsGetTexture(&iw->game, "font"), 24, 32, "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890,.!?\"'/\\<>()=:");
     fontSetAllLetterWidth(&iw->game.font, 20);
     
@@ -261,6 +336,7 @@ void iwbtgLoad(Iwbtg* iw)
     assetsLoadSound(g, "assets/double_jump.wav", "doubleJump");
     assetsLoadSound(g, "assets/shoot.wav", "shoot");
     assetsLoadSound(g, "assets/death.wav", "death");
+    assetsLoadSound(g, "assets/save.wav", "saved");
     assetsLoadSound(g, "assets/trap.wav", "trap");
     
     assetsLoadMusic(g, "assets/forest_music.ogg", "forestMusic");
@@ -274,6 +350,8 @@ void iwbtgUpdate(Iwbtg* iw)
     iw->time += dt;
     
     iw->frameCount++;
+    
+    textInputUpdate(&iw->textInput, iw);
     
     if(checkKeyPressed(g, KEY_FULLSCREEN_TOGGLE))
         gameFullscreenToggle(g);
@@ -411,8 +489,10 @@ void iwbtgDraw(Iwbtg* iw)
             }
         }
         
-        rectangleDraw(g, iw->debugDrawPosition.x, iw->debugDrawPosition.y, 4, 4, 1, 0, 1, 1);
+        //rectangleDraw(g, iw->debugDrawPosition.x, iw->debugDrawPosition.y, 4, 4, 1, 0, 1, 1);
     }
+    
+    textInputDraw(&iw->textInput, iw);
     
     renderEnd(g);
 }

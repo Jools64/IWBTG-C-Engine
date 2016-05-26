@@ -17,6 +17,7 @@ typedef struct
     Vector2i mousePosition;
     
     char text[MAX_TEXT_LENGTH];
+    bool frameVoid;
 } Input;
 
 #define MAX_KEY_BINDINGS 20

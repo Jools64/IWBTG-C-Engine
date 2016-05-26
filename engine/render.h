@@ -44,6 +44,7 @@ typedef struct
     int letterWidth[256];
     int lineSpacing, letterSpacing;
     Sprite sprite;
+    bool singleCase;
 } Font;
 
 void renderBegin(Game* game);

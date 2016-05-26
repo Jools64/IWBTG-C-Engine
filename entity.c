@@ -176,7 +176,10 @@ void entityUpdate(Entity* e, Iwbtg* iw, float dt)
             if(entityCheckPlayerCollision(e, &iw->player))
             {
                 if(e->animationTimer <= 0)
+                {
+                    soundPlay(assetsGetSound(&iw->game, "saved"), 1);
                     saveGame(iw, true);
+                }
                 e->sprite.frame = 1;
                 e->animationTimer = 0.5;
             }

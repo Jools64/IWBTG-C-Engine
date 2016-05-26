@@ -21,6 +21,15 @@ typedef struct Level
     Entity* entityMap[MAP_WIDTH][MAP_HEIGHT];
 } Level;
 
+#define TEXT_INPUT_MAX_LENGTH 4096
+typedef struct TextInput
+{
+    char text[TEXT_INPUT_MAX_LENGTH];
+    int length, backspaceFrames;
+    bool active;
+    Vector2f position;
+} TextInput;
+
 typedef struct Iwbtg
 {
     Game game;
@@ -56,6 +65,8 @@ typedef struct Iwbtg
     
     GameState state;
     float gameOverTimer;
+    
+    TextInput textInput;
     
     Vector2f debugDrawPosition;
 } Iwbtg;

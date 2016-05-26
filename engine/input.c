@@ -37,21 +37,29 @@ bool checkMouseButton(Game* g, int button)
 
 bool checkKey(Game* g, int key)
 {
+    if(g->input.frameVoid)
+        return 0;
     return g->input.keys[getKey(&g->keyBindings, key) & 255];
 }
 
 bool checkKeyPressed(Game* g, int key)
 {
+    if(g->input.frameVoid)
+        return 0;
 	return g->input.keysPressed[getKey(&g->keyBindings, key) & 255];
 }
 
 bool checkKeyPressedDirect(Game* g, int key)
 {
+    if(g->input.frameVoid)
+        return 0;
     return g->input.keysPressed[key & 255];
 }
 
 bool checkKeyReleased(Game* g, int key)
 {
+    if(g->input.frameVoid)
+        return 0;
     return g->input.keysReleased[getKey(&g->keyBindings, key) & 255];
 }
 

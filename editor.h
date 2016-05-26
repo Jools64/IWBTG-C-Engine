@@ -2,6 +2,7 @@ typedef enum EditorMode
 {
     EditorMode_entities,
     EditorMode_controllers,
+    EditorMode_scripts,
     EditorMode_count
 } EditorMode;
 
