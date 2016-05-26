@@ -53,8 +53,15 @@ void editorUpdate(Iwbtg* iw)
         {
             if(checkMouseButton(g, SDL_BUTTON_LEFT))
             {
-                iw->textInput.active = true;
+                Script* s = levelGetScriptAtPosition(&iw->level, mx, my);
+                if(!s)
+                    s = levelAddScript(&iw->level, mx, my);
+                
+                textInputEditString(&iw->textInput, &s->text[0], SCRIPT_MAX_LENGTH);
             }
+            else if(checkMouseButton(g, SDL_BUTTON_RIGHT))
+                levelRemoveScript(&iw->level, mx, my);
+            
         }
     }
             
@@ -122,6 +129,19 @@ void editorDraw(Iwbtg* iw)
                     textureDraw(g, e->objectsTexture, 0, 0);
                 else if(e->mode == EditorMode_controllers)
                     textureDraw(g, e->controllersTexture, 0, 0);
+            }
+        }
+        
+        if(e->mode == EditorMode_scripts)
+        {
+            for(int i = 0; i < MAX_SCRIPTS_PER_LEVEL; ++i)
+            {
+                Script* s = &iw->level.scripts[i];
+                if(s->inUse)
+                    rectangleDraw(&iw->game, 
+                                  s->position.x * GRID_SIZE, 
+                                  s->position.y * GRID_SIZE,
+                                  32, 32, 1.0, 0.0, 1.0, 0.2);
             }
         }
         

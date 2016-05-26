@@ -13,18 +13,30 @@ typedef struct SaveState
     double time;
 } SaveState;
 
+#define SCRIPT_MAX_LENGTH 1024
+
+typedef struct Script
+{
+    char text[SCRIPT_MAX_LENGTH];
+    bool inUse;
+    Vector2i position;
+} Script;
+
+#define MAX_SCRIPTS_PER_LEVEL 32
 typedef struct Level
 {
     Grid entities;
     Grid ground;
+    Script scripts[32];
     Grid controllers;
     Entity* entityMap[MAP_WIDTH][MAP_HEIGHT];
+    
 } Level;
 
-#define TEXT_INPUT_MAX_LENGTH 4096
 typedef struct TextInput
 {
-    char text[TEXT_INPUT_MAX_LENGTH];
+    char* text;
+    int textMaxLength;
     int length, backspaceFrames;
     bool active;
     Vector2f position;
@@ -98,3 +110,11 @@ void iwbtgUpdate(Iwbtg* iw);
 int compareEntitiesByDepth(const void* a, const void* b);
 bool checkAdjacentBlock(Iwbtg* iw, Entity* e, int x, int y);
 void iwbtgDraw(Iwbtg* iw);
+
+Script* levelGetScriptAtPosition(Level* l, int x, int y);
+Script* levelAddScript(Level* l, int x, int y);
+void levelRemoveScript(Level* l, int x, int y);
+void textInputEditString(TextInput* ti, char* string, int stringMaxLength);
+void textInputInit(TextInput* ti);
+void textInputUpdate(TextInput* ti, Iwbtg* iw);
+void textInputDraw(TextInput* ti, Iwbtg* iw);

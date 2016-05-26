@@ -25,9 +25,49 @@
 #include "player.c"
 #include "entity.c"
 
+Script* levelGetScriptAtPosition(Level* l, int x, int y)
+{
+    for(int i = 0; i < MAX_SCRIPTS_PER_LEVEL; ++i)
+        if(l->scripts[i].inUse && l->scripts[i].position.x == x 
+           && l->scripts[i].position.y == y)
+            return &l->scripts[i];
+    return 0;
+}
+
+Script* levelAddScript(Level* l, int x, int y)
+{
+    for(int i = 0; i < MAX_SCRIPTS_PER_LEVEL; ++i)
+        if(!l->scripts[i].inUse)
+        {
+            l->scripts[i].position.x = x;
+            l->scripts[i].position.y = y;
+            l->scripts[i].inUse = true;
+            l->scripts[i].text[0] = '\0';
+            return &l->scripts[i];
+        }
+    printf("Error: Out of room for scripts!");
+    return 0;
+}
+
+void levelRemoveScript(Level* l, int x, int y)
+{
+    for(int i = 0; i < MAX_SCRIPTS_PER_LEVEL; ++i)
+        if(l->scripts[i].inUse && l->scripts[i].position.x == x 
+           && l->scripts[i].position.y == y)
+           l->scripts[i].inUse = false;
+}
+
+void textInputEditString(TextInput* ti, char* string, int stringMaxLength)
+{
+    ti->text = string;
+    ti->textMaxLength = stringMaxLength;
+    ti->active = true;
+}
+
 void textInputInit(TextInput* ti)
 {
-    ti->text[0] = 0;
+    ti->text = 0;
+    ti->textMaxLength = 0;
     ti->length = 0;
     ti->active = false;
     ti->position.x = 256;
@@ -44,14 +84,16 @@ void textInputUpdate(TextInput* ti, Iwbtg* iw)
         // Force upper case on all input
         int i = 0;
         
-        if(strlen(ti->text) + strlen(g->input.text) < TEXT_INPUT_MAX_LENGTH-1)
-            strcat(ti->text, g->input.text);
+        char* text = ti->text;
+        
+        if(strlen(text) + strlen(g->input.text) < ti->textMaxLength-1)
+            strcat(text, g->input.text);
         
         if(g->input.keysPressed[SDLK_BACKSPACE & 255])
         {
-            int length = strlen(ti->text);
+            int length = strlen(text);
             if(length > 0)
-                ti->text[length-1] = '\0';
+                text[length-1] = '\0';
             ti->backspaceFrames = 0;
         }
         
@@ -60,16 +102,16 @@ void textInputUpdate(TextInput* ti, Iwbtg* iw)
             ti->backspaceFrames++;
             if(ti->backspaceFrames > 25)
             {
-                int length = strlen(ti->text);
+                int length = strlen(text);
                 if(length > 0)
-                    ti->text[length-1] = '\0';
+                    text[length-1] = '\0';
             }
         }
         
         if(g->input.keysPressed[SDLK_RETURN & 255])
         {
-            if(strlen("\n") + strlen(g->input.text) < TEXT_INPUT_MAX_LENGTH-1)
-            strcat(ti->text, "\n");
+            if(strlen("\n") + strlen(g->input.text) < ti->textMaxLength-1)
+            strcat(text, "\n");
         }
         
         if(g->input.keysPressed[SDLK_ESCAPE & 255])
@@ -124,10 +166,26 @@ Entity* createParticle(Iwbtg* iw, Texture* texture, float x, float y,
 void loadMap(Iwbtg* iw, char* file)
 {
     FILE* f;
-    if(f = fopen(file, "r"))
+    if(f = fopen(file, "rb"))
     {
         fread(iw->level.entities.data, sizeof(int) * MAP_WIDTH * MAP_HEIGHT, 1, f);
         fread(iw->level.controllers.data, sizeof(int) * MAP_WIDTH * MAP_HEIGHT, 1, f);
+        
+        int scriptCount;
+        fread(&scriptCount, sizeof(int), 1, f);
+        
+        for(int i = 0; i < MAX_SCRIPTS_PER_LEVEL; ++i)
+        {
+            iw->level.scripts[i].text[0] = '\0';
+            iw->level.scripts[i].inUse = false;
+        }
+        
+        for(int i = 0; i < scriptCount; ++i)
+        {
+            fread(&iw->level.scripts[i], sizeof(Script), 1, f);
+            int result = feof(f);
+        }
+        
         memset(iw->level.ground.data, 0, sizeof(int) * MAP_WIDTH * MAP_HEIGHT);
         memset(iw->level.entityMap, 0, sizeof(Entity*) * MAP_WIDTH * MAP_HEIGHT); 
         fclose(f);
@@ -136,8 +194,14 @@ void loadMap(Iwbtg* iw, char* file)
     {
         memcpy(iw->level.entities.data, defaultMap, sizeof(int) * MAP_WIDTH * MAP_HEIGHT);
         memset(iw->level.ground.data, 0, sizeof(int) * MAP_WIDTH * MAP_HEIGHT);
-        memset(iw->level.ground.data, 0, sizeof(int) * MAP_WIDTH * MAP_HEIGHT);
+        memset(iw->level.controllers.data, 0, sizeof(int) * MAP_WIDTH * MAP_HEIGHT);
         memset(iw->level.entityMap, 0, sizeof(Entity*) * MAP_WIDTH * MAP_HEIGHT); 
+        
+        for(int i = 0; i < MAX_SCRIPTS_PER_LEVEL; ++i)
+        {
+            iw->level.scripts[i].text[0] = '\0';
+            iw->level.scripts[i].inUse = false;
+        }
         iw->editor.enabled = true;
     }
     
@@ -170,9 +234,22 @@ void loadMap(Iwbtg* iw, char* file)
 
 void saveMap(Iwbtg* iw, char* file)
 {
-    FILE* f = fopen(file, "w");
+    FILE* f = fopen(file, "wb");
     fwrite(iw->level.entities.data, sizeof(int) * MAP_WIDTH * MAP_HEIGHT, 1, f);
     fwrite(iw->level.controllers.data, sizeof(int) * MAP_WIDTH * MAP_HEIGHT, 1, f);
+    
+    int scriptCount = 0;
+    for(int i = 0; i < MAX_SCRIPTS_PER_LEVEL; ++i)
+        if(iw->level.scripts[i].inUse)
+            scriptCount++;
+    fwrite(&scriptCount, sizeof(int), 1, f);
+    for(int i = 0; i < MAX_SCRIPTS_PER_LEVEL; ++i)
+        if(iw->level.scripts[i].inUse)
+        {
+            // TODO: Write only the characters that are actually used.
+            fwrite(&iw->level.scripts[i], sizeof(Script), 1, f);
+        }
+    
     fclose(f);
 }
 

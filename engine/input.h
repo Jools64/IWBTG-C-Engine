@@ -1,6 +1,3 @@
-#ifndef INPUT_H
-#define INPUT_H
-
 #define MAX_KEYS 255
 #define MAX_MOUSE_BUTTONS 5
 #define MAX_TEXT_LENGTH 256
@@ -57,5 +54,3 @@ bool checkKeyPressedDirect(Game* g, int key);
 bool checkKeyReleased(Game* g, int key);
 
 void setMousePosition(Game* g, int x, int y);
-
-#endif // INPUT_H
