@@ -24,6 +24,7 @@
 #include "controller.c"
 #include "player.c"
 #include "entity.c"
+#include "script.c"
 
 Script* levelGetScriptAtPosition(Level* l, int x, int y)
 {
@@ -579,6 +580,10 @@ int main(int argc, char** argv)
 {
     Iwbtg* iwbtg = new(Iwbtg);
     Game* game = &iwbtg->game;
+    
+    ScriptState ss = parseScript("speed = 300\ndirection = 23");
+    for(int i = 0; i < ss.valueCount; ++i)
+        printf("%s: \"%f\"\n", ss.values[i].key, ss.values[i].number);
     
     gameInit(game, "iwbtg", 960, 540, 1);
     
