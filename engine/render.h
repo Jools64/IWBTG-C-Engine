@@ -70,6 +70,7 @@ void fontSetLettersWidth(Font* font, char* letters, int letterWidth);
 void fontSetAllLetterWidth(Font* font, int letterWidth);
 void drawText(Game* g, Font* f, char* text, float x, float y);
 void drawTextCentered(Game* g, Font* f, char* text, float x, float y);
+Vector2f getTextCharPosition(Font* f, char* text, int character);
 Vector2f getTextSize(Font* f, char* text);
 float getTextLineWidth(Font* f, char* text);
 Color makeColor(float r, float g, float b, float a);

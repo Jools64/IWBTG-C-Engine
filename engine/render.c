@@ -259,6 +259,27 @@ Vector2f getTextSize(Font* f, char* text)
     return size;
 }
 
+Vector2f getTextCharPosition(Font* f, char* text, int character)
+{   
+    int offsetX = 0, 
+        offsetY = 0;
+    
+    for(int i = 0; i < character; ++i)
+    {
+        if(text[i] == '\n')
+        {
+            offsetX = 0;
+            offsetY += f->lineSpacing;
+        }
+        else
+            offsetX += f->letterWidth[(int)text[i]] + f->letterSpacing;
+    }
+    
+    Vector2f result = { (float) offsetX, (float) offsetY };
+    
+    return result;
+}
+
 float getTextLineWidth(Font* f, char* text)
 {
     int width = 0, length = strlen(text);

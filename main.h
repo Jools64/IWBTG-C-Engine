@@ -37,7 +37,7 @@ typedef struct TextInput
 {
     char* text;
     int textMaxLength;
-    int length, backspaceFrames;
+    int length, backspaceFrames, cursorPosition;
     bool active;
     Vector2f position;
 } TextInput;

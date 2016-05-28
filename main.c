@@ -1,7 +1,8 @@
 // TODO: Stop being so lazy and further break up this into headers and c source files.
 
-#define PI 3.14159265359
 #define NO_MUSIC
+
+#define PI 3.14159265359
 #define MAX_ENTITIES 2048
 #define MAP_WIDTH 30
 #define MAP_HEIGHT 17
@@ -74,6 +75,30 @@ void textInputInit(TextInput* ti)
     ti->position.x = 256;
     ti->position.y = 128;
     ti->backspaceFrames = 0;
+    ti->cursorPosition = 0;
+}
+
+// TODO: Optimize and make safe
+void stringInsert(char* destString, char* string, int position, int maxSize)
+{
+    char buffer[maxSize];
+    
+    strncpy(buffer, destString, position);
+    buffer[position] = '\0';
+    strcat(buffer, string);
+    strcat(buffer, destString + position);
+    strcpy(destString, buffer);
+}
+
+// TODO: Optimize and make safe
+void stringRemoveCharacter(char* string, int position, int maxSize)
+{
+    char buffer[maxSize];
+    
+    strncpy(buffer, string, position - 1);
+    buffer[position - 1] = '\0';
+    strcat(buffer, string + position);
+    strcpy(string, buffer);
 }
 
 void textInputUpdate(TextInput* ti, Iwbtg* iw)
@@ -87,14 +112,27 @@ void textInputUpdate(TextInput* ti, Iwbtg* iw)
         
         char* text = ti->text;
         
-        if(strlen(text) + strlen(g->input.text) < ti->textMaxLength-1)
-            strcat(text, g->input.text);
+        int inputLength = strlen(g->input.text);
+        if(inputLength + strlen(g->input.text) < ti->textMaxLength-1 && inputLength > 0)
+        {
+            stringInsert(text, g->input.text, ti->cursorPosition, SCRIPT_MAX_LENGTH);
+            ti->cursorPosition += inputLength;
+        }
+           
+        if(g->input.keysPressed[SDLK_LEFT & 255])
+            ti->cursorPosition--;
+        if(g->input.keysPressed[SDLK_RIGHT & 255])
+            ti->cursorPosition++;
+        ti->cursorPosition = min(max(ti->cursorPosition, 0), strlen(text));
         
         if(g->input.keysPressed[SDLK_BACKSPACE & 255])
         {
             int length = strlen(text);
             if(length > 0)
-                text[length-1] = '\0';
+            {
+                stringRemoveCharacter(text, ti->cursorPosition, SCRIPT_MAX_LENGTH);
+                ti->cursorPosition--;
+            }
             ti->backspaceFrames = 0;
         }
         
@@ -105,14 +143,21 @@ void textInputUpdate(TextInput* ti, Iwbtg* iw)
             {
                 int length = strlen(text);
                 if(length > 0)
-                    text[length-1] = '\0';
+                {
+                    stringRemoveCharacter(text, ti->cursorPosition, SCRIPT_MAX_LENGTH);
+                    ti->cursorPosition--;
+                }
             }
+            
         }
         
         if(g->input.keysPressed[SDLK_RETURN & 255])
         {
             if(strlen("\n") + strlen(g->input.text) < ti->textMaxLength-1)
-            strcat(text, "\n");
+            {
+                stringInsert(text, "\n", ti->cursorPosition, SCRIPT_MAX_LENGTH);
+                ti->cursorPosition++;
+            }
         }
         
         if(g->input.keysPressed[SDLK_ESCAPE & 255])
@@ -135,7 +180,12 @@ void textInputDraw(TextInput* ti, Iwbtg* iw)
         
         rectangleDraw(&iw->game, ti->position.x - padding, ti->position.y - padding, 
                       size.x + (padding * 2), size.y + (padding * 2) - 2, 0.2, 0.1, 0.3, 0.8);
+                      
         drawText(&iw->game, &iw->fontSmall, ti->text, ti->position.x, ti->position.y);
+        
+        Vector2f cursorPosition = getTextCharPosition(&iw->fontSmall, ti->text, ti->cursorPosition);
+        
+        rectangleDraw(&iw->game, ti->position.x + cursorPosition.x, ti->position.y + cursorPosition.y, 2, 16, 1.0, 1.0, 1.0, 1.0);
     }
 }
 
