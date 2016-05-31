@@ -1,26 +1,77 @@
-void renderBegin(Game* game)
+void renderBegin(Game* g)
 {
-    SDL_SetRenderDrawColor(game->renderer, 30, 80, 200, 255);
-    SDL_RenderClear(game->renderer);
+    #ifdef OPENGL
+    
+        glEnable(GL_TEXTURE_2D);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
+        glClearColor(0.0f, 0.5f, 1.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        
+        glUseProgram(g->defaultShader.id);
+        glEnableVertexAttribArray(g->defaultShader.inVertexPos);
+        glEnableVertexAttribArray(g->defaultShader.inTexturePos);
+        
+        glActiveTexture(GL_TEXTURE0);
+        glUniform1i(g->defaultShader.uTextureSampler, 0);
+        
+        /*float w, h;
+        SDL_GL_BindTexture(assetsGetTexture(g, "glTest")->data, &w, &h);
+        printf("w: %d, h: %d\n", w, h);*/
+        glBindTexture(GL_TEXTURE_2D, assetsGetTexture(g, "glTest")->id);
+        
+        glBindBuffer(GL_ARRAY_BUFFER, g->renderBatch.vertexBuffer);
+        glVertexAttribPointer(g->defaultShader.inVertexPos, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), 0);
+        
+        glBindBuffer(GL_ARRAY_BUFFER, g->renderBatch.uvBuffer);
+        glVertexAttribPointer(g->defaultShader.inTexturePos, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), 0);
+        
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g->renderBatch.indexBuffer);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        
+        glDisableVertexAttribArray(g->defaultShader.inVertexPos);
+        glUseProgram(0);
+    
+    #else
+    
+        SDL_SetRenderDrawColor(g->renderer, 30, 80, 200, 255);
+        SDL_RenderClear(g->renderer);
+    
+    #endif
 }
 
 void renderEnd(Game* game)
 {
-    SDL_RenderPresent(game->renderer);
+    #ifdef OPENGL
+    
+        SDL_GL_SwapWindow(game->window);
+    
+    #else
+        
+        SDL_RenderPresent(game->renderer);
+    
+    #endif
 }
 
 void rectangleDraw(Game* g, float x, float y, float w, float h, 
                    float cr, float cg, float cb, float ca)
 {
-    SDL_Rect rect = { (int)x, (int)y, (int)w, (int)h };
-    SDL_SetRenderDrawBlendMode(g->renderer,
-                               SDL_BLENDMODE_BLEND);
-    SDL_SetRenderDrawColor(g->renderer, 
-                           clampi((cr * 255), 0, 255), 
-                           clampi((cg * 255), 0, 255), 
-                           clampi((cb * 255), 0, 255), 
-                           clampi((ca * 255), 0, 255));
-    SDL_RenderFillRect(g->renderer, &rect);
+    #ifdef OPENGL
+    
+    #else
+    
+        SDL_Rect rect = { (int)x, (int)y, (int)w, (int)h };
+        SDL_SetRenderDrawBlendMode(g->renderer,
+                                   SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(g->renderer, 
+                               clampi((cr * 255), 0, 255), 
+                               clampi((cg * 255), 0, 255), 
+                               clampi((cb * 255), 0, 255), 
+                               clampi((ca * 255), 0, 255));
+        SDL_RenderFillRect(g->renderer, &rect);
+    
+    #endif
 }
 
 void textureDrawExt(Game* g, Texture* t, 
@@ -30,42 +81,50 @@ void textureDrawExt(Game* g, Texture* t,
                     float scaleX, float scaleY, float angle, float alpha,
                     bool additiveBlend, Color color)
 {
-    float scaleOffsetX = fabs(scaleX) * w * (originX / w);
-    float scaleOffsetY = fabs(scaleY) * h * (originY / h);
+    #ifdef OPENGL
     
-    SDL_Rect dest = { 
-        x - scaleOffsetX - roundf(g->camera.x) + originX, 
-        y - scaleOffsetY - roundf(g->camera.y) + originY, 
-        w *= fabs(scaleX), 
-        h *= fabs(scaleY) 
-    };
+        
     
-    int flip = 0;
-    if(scaleX < 0)
-        flip = flip | SDL_FLIP_HORIZONTAL;
-    if(scaleY < 0)
-        flip = flip | SDL_FLIP_VERTICAL;
+    #else
     
-    if(alpha > 1)
-        alpha = 1;
-    if(alpha < 0)
-        alpha = 0;
-    
-    SDL_SetTextureColorMod(t->data, 
-                           clampi((color.r * 255), 0, 255), 
-                           clampi((color.g * 255), 0, 255), 
-                           clampi((color.b * 255), 0, 255));
-    SDL_SetTextureAlphaMod(t->data, alpha * color.a * 255);
-    
-    if(additiveBlend)
-        SDL_SetTextureBlendMode(t->data, SDL_BLENDMODE_ADD);
-    else
-        SDL_SetTextureBlendMode(t->data, SDL_BLENDMODE_BLEND);
-    
-    SDL_Rect source = { tX, tY, tW, tH };
-    SDL_Point center = { originX * scaleX, originY * scaleY };
-    SDL_RenderCopyEx(g->renderer, t->data, &source, &dest, 
-                     angle * 180 / PI, &center, flip);
+        float scaleOffsetX = fabs(scaleX) * w * (originX / w);
+        float scaleOffsetY = fabs(scaleY) * h * (originY / h);
+        
+        SDL_Rect dest = { 
+            x - scaleOffsetX - roundf(g->camera.x) + originX, 
+            y - scaleOffsetY - roundf(g->camera.y) + originY, 
+            w *= fabs(scaleX), 
+            h *= fabs(scaleY) 
+        };
+        
+        int flip = 0;
+        if(scaleX < 0)
+            flip = flip | SDL_FLIP_HORIZONTAL;
+        if(scaleY < 0)
+            flip = flip | SDL_FLIP_VERTICAL;
+        
+        if(alpha > 1)
+            alpha = 1;
+        if(alpha < 0)
+            alpha = 0;
+        
+        SDL_SetTextureColorMod(t->data, 
+                               clampi((color.r * 255), 0, 255), 
+                               clampi((color.g * 255), 0, 255), 
+                               clampi((color.b * 255), 0, 255));
+        SDL_SetTextureAlphaMod(t->data, alpha * color.a * 255);
+        
+        if(additiveBlend)
+            SDL_SetTextureBlendMode(t->data, SDL_BLENDMODE_ADD);
+        else
+            SDL_SetTextureBlendMode(t->data, SDL_BLENDMODE_BLEND);
+        
+        SDL_Rect source = { tX, tY, tW, tH };
+        SDL_Point center = { originX * scaleX, originY * scaleY };
+        SDL_RenderCopyEx(g->renderer, t->data, &source, &dest, 
+                         angle * 180 / PI, &center, flip);
+                         
+    #endif
 } 
 
 void spriteInit(Sprite* s, Texture* t, float width, float height)
@@ -149,14 +208,22 @@ void spriteDraw(Game* g, Sprite* s, float x, float y)
 
 void textureDraw(Game* g, Texture* t, float x, float y)
 {
-    SDL_Rect dest = { 
-        x - roundf(g->camera.x), 
-        y - roundf(g->camera.y), 
-        t->size.x, 
-        t->size.y
-    };
+    #ifdef OPENGL
     
-    SDL_RenderCopy(g->renderer, t->data, null, &dest);
+        
+    
+    #else
+        
+        SDL_Rect dest = { 
+            x - roundf(g->camera.x), 
+            y - roundf(g->camera.y), 
+            t->size.x, 
+            t->size.y
+        };
+        
+        SDL_RenderCopy(g->renderer, t->data, null, &dest);
+    
+    #endif
 } 
 
 void fontInit(Font* font, Texture* texture, int letterWidth, int letterHeight,

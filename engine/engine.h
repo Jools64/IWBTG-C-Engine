@@ -5,6 +5,7 @@
     Write an actual "memoryPool" that can deallocate
 */
 
+//#define OPENGL
 #define byte unsigned char
 #define bool byte
 #define true 1
@@ -21,6 +22,12 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_mixer.h>
+
+#ifdef OPENGL
+    #include <gl/glew.h>
+    #include <SDL2/SDL_opengl.h>
+    #include <gl/glu.h>
+#endif
 
 #include "memoryPool.h"
 #include "utils.h"

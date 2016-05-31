@@ -12,8 +12,17 @@ Texture textureLoad(Game* game, char* filePath)
     {
         texture.size.x = surface->w;
         texture.size.y = surface->h;
-        texture.data = SDL_CreateTextureFromSurface(game->renderer, surface);
         texture.surface = surface;
+        
+        #ifdef OPENGL
+            glGenTextures(1, &texture.id);
+            glBindTexture(GL_TEXTURE_2D, texture.id);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture.size.x, texture.size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, texture.surface->pixels);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        #else
+            texture.data = SDL_CreateTextureFromSurface(game->renderer, surface);
+        #endif
         return texture;
     }
 }

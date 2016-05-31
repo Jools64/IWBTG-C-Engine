@@ -8,9 +8,13 @@ typedef struct Color
 
 typedef struct
 {
-    SDL_Texture* data;
     SDL_Surface* surface;
     Vector2i size;
+#ifdef OPENGL
+    GLuint id;
+#else
+    SDL_Texture* data;
+#endif
 } Texture;
 
 #define FRAMES_PER_ANIMATION 32

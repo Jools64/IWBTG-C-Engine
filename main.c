@@ -459,6 +459,7 @@ void iwbtgLoad(Iwbtg* iw)
     assetsLoadTexture(g, "assets/controllers.png", "controllers");
     assetsLoadTexture(g, "assets/moving_platform.png", "movingPlatform");
     assetsLoadTexture(g, "assets/font_small.png", "fontSmall");
+    assetsLoadTexture(g, "assets/gl_test.png", "glTest");
     
     assetsLoadSound(g, "assets/jump.wav", "jump");
     assetsLoadSound(g, "assets/double_jump.wav", "doubleJump");
@@ -630,10 +631,6 @@ int main(int argc, char** argv)
 {
     Iwbtg* iwbtg = new(Iwbtg);
     Game* game = &iwbtg->game;
-    
-    ScriptState ss = parseScript("speed = 300\ndirection=23 gravity = 32.435");
-    for(int i = 0; i < ss.valueCount; ++i)
-        printf("%s: \"%f\"\n", ss.values[i].key, ss.values[i].number);
     
     gameInit(game, "iwbtg", 960, 540, 1);
     

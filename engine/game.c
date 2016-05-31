@@ -1,3 +1,146 @@
+#ifdef OPENGL
+
+    void printProgramLog(GLuint program)
+    {
+        if(glIsProgram(program))
+        {
+            int length = 0;
+            int maxLength = length;
+            
+            glGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLength);
+            char* log = malloc(sizeof(char) * maxLength);
+            glGetProgramInfoLog(program, maxLength, &length, log);
+            if(length > 0)
+                printf("%s\n", log);
+            free(log);
+        }
+        else
+            printf("Name %d is not a program\n", program);
+    }
+
+    void printShaderLog(GLuint shader)
+    {
+        if(glIsShader(shader))
+        {
+            int length = 0;
+            int maxLength = length;
+            
+            glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
+            char* log = malloc(sizeof(char) * maxLength);
+            glGetShaderInfoLog(shader, maxLength, &length, log);
+            if(length > 0)
+                printf("%s\n", log);
+            free(log);
+        }
+        else
+            printf("Name %d is not a shader\n", shader);
+    }
+
+    bool compileShader(GLuint* programId, char* vertexSource, char* fragmentSource)
+    {
+        *programId = glCreateProgram();
+        GLint compiled;
+        
+        GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+        glShaderSource(vertexShader, 1, (const GLchar**)&vertexSource, 0);
+        glCompileShader(vertexShader);
+        compiled = GL_FALSE;
+        glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &compiled);
+        if(compiled != GL_TRUE)
+        {
+            printf("Unable to compile vertex shader:\n");
+            printShaderLog(vertexShader);
+            return false;
+        }
+        else
+            glAttachShader(*programId, vertexShader);
+        
+        GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+        glShaderSource(fragmentShader, 1, (const GLchar**)&fragmentSource, 0);
+        glCompileShader(fragmentShader);
+        compiled = GL_FALSE;
+        glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &compiled);
+        if(compiled != GL_TRUE)
+        {
+            printf("Unable to compile fragment shader:\n");
+            printShaderLog(fragmentShader);
+            return false;
+        }
+        else
+            glAttachShader(*programId, fragmentShader);
+        
+        glLinkProgram(*programId);
+        
+        GLint success = GL_TRUE;
+        glGetProgramiv(*programId, GL_LINK_STATUS, &success);
+        if(success != GL_TRUE)
+        {
+            printf("Error linking shader program:\n");
+            printProgramLog(*programId);
+            return false;
+        }
+        
+        return true;
+    }
+    
+    char* loadText(char* filename)
+    {
+        char* text = 0;
+        long length;
+        FILE* file = fopen(filename, "rb");
+
+        if(file)
+        {
+            fseek(file, 0, SEEK_END);
+            length = ftell(file);
+            fseek(file, 0, SEEK_SET);
+
+            text = malloc(length + 1);
+            if (text)
+                fread(text, 1, length, file);
+            text[length] = '\0';
+            
+            fclose(file);
+        }
+        
+        return text;
+    }
+
+    bool initGl(Game* g)
+    {
+        bool success = true;
+        
+        char* vertexSource = loadText("assets/default.vert");
+        char* fragmentSource = loadText("assets/default.frag");
+
+        renderBatchInit(&g->renderBatch);
+        
+        bool compiled = compileShader(&g->defaultShader.id, vertexSource, fragmentSource);
+        
+        free(vertexSource);
+        free(fragmentSource);
+        
+        if(compiled)
+        {
+            
+            if((g->defaultShader.inVertexPos = glGetAttribLocation(g->defaultShader.id, "inVertexPos")) == -1)
+                printf("Warning: Shader program does not contain \"inVertexPos\" variable.\n");
+            
+            if((g->defaultShader.inTexturePos = glGetAttribLocation(g->defaultShader.id, "inTexturePos")) == -1)
+                printf("Warning: Shader program does not contain \"inTexturePos\" variable.\n");
+            
+            if((g->defaultShader.uTextureSampler = glGetUniformLocation(g->defaultShader.id, "uTextureSampler")) == -1)
+                printf("Warning: Shader program does not contain \"uTextureSampler\" variable.\n");
+            
+        }
+        else
+            return false;
+        
+        return true;
+    }
+
+#endif
+
 bool gameInit(Game* g, char* title, int width, int height, float scale)
 {
     Vector2i size = { width, height };
@@ -18,33 +161,82 @@ bool gameInit(Game* g, char* title, int width, int height, float scale)
         return false;
     }
     
-    g->window = 
+    #ifdef OPENGL
+    
+        g->window = 
+        SDL_CreateWindow(title, 
+                         SDL_WINDOWPOS_CENTERED,
+                         SDL_WINDOWPOS_CENTERED,
+                         width * scale, height * scale, 
+                         SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
+                             
+        if (!g->window)
+        {
+            printf("SDL_CreateWindow Error: %s\n", SDL_GetError());
+            SDL_Quit();
+            return 1;
+        }
+        
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+        
+        g->glContext = SDL_GL_CreateContext(g->window);
+        if(g->glContext)
+        {
+            glewExperimental = GL_TRUE;
+            GLenum glewError = glewInit();
+            if( glewError != GLEW_OK )
+            {
+                printf("Error initializing GLEW! %s\n", glewGetErrorString(glewError));
+            }
+
+            //Use Vsync
+            if(SDL_GL_SetSwapInterval( 1 ) < 0)
+            {
+                printf("Warning: Unable to set VSync! SDL Error: %s\n", SDL_GetError());
+            }
+
+            //Initialize OpenGL
+            if(!initGl(g))
+                printf("Unable to initialize OpenGL!\n");
+            else
+                printf("OpenGL initialized\n");
+        }
+        else
+            printf("Could not create OpenGl context: %s\n", SDL_GetError());
+        
+    #else
+    
+        g->window = 
         SDL_CreateWindow(title, 
                          SDL_WINDOWPOS_CENTERED,
                          SDL_WINDOWPOS_CENTERED,
                          width * scale, height * scale, 
                          SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
-                         
-    if (!g->window)
-    {
-	    printf("SDL_CreateWindow Error: %s\n", SDL_GetError());
-	    SDL_Quit();
-	    return 1;
-    }
+                             
+        if (!g->window)
+        {
+            printf("SDL_CreateWindow Error: %s\n", SDL_GetError());
+            SDL_Quit();
+            return 1;
+        }
+
+        g->renderer = 
+            SDL_CreateRenderer(g->window, -1, 
+                               SDL_RENDERER_ACCELERATED 
+                               | SDL_RENDERER_PRESENTVSYNC);
+        if (!g->renderer)
+        {
+            SDL_DestroyWindow(g->window);
+            printf("SDL_CreateRenderer Error: %s\n", SDL_GetError());
+            SDL_Quit();
+            return 1;
+        }
+        
+        SDL_RenderSetScale(g->renderer, scale, scale);
     
-    g->renderer = 
-        SDL_CreateRenderer(g->window, -1, 
-                           SDL_RENDERER_ACCELERATED 
-                           | SDL_RENDERER_PRESENTVSYNC);
-    if (!g->renderer)
-    {
-	    SDL_DestroyWindow(g->window);
-	    printf("SDL_CreateRenderer Error: %s\n", SDL_GetError());
-	    SDL_Quit();
-	    return 1;
-    }
-    
-    SDL_RenderSetScale(g->renderer, scale, scale);
+    #endif
     
     if((IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG) != IMG_INIT_PNG) 
     {
@@ -111,9 +303,14 @@ void gameHandleEvents(Game* g)
                         wh = e.window.data2;
                     g->windowSize.x = ww;
                     g->windowSize.y = wh;
-                    SDL_RenderSetScale(g->renderer, 
-                                       (float)ww / g->size.x, 
-                                       (float)wh / g->size.y);
+                    
+                    #ifdef OPENGL
+                    
+                    #else
+                        SDL_RenderSetScale(g->renderer, 
+                                           (float)ww / g->size.x, 
+                                           (float)wh / g->size.y);
+                    #endif
                 }
                 break;
                 

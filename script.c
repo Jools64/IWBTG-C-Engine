@@ -28,18 +28,18 @@ typedef struct ScriptState
     int valueCount;
 } ScriptState;
 
-typedef enum TokenType
+typedef enum _TokenType // A file included in SDL_opengl.h also defines a TokenType enum. -_-
 {
     TokenType_identifier,
     TokenType_number,
     TokenType_assignment,
     TokenType_endOfFile
-} TokenType;
+} _TokenType;
 
 #define MAX_TOKEN_LENGTH MAX_VALUE_LENGTH
 typedef struct Token
 {
-    TokenType type;
+    _TokenType type;
     char value[MAX_TOKEN_LENGTH];
 } Token;
 
