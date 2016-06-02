@@ -32,7 +32,6 @@ bool checkRectangleIntersectSprite(Rectanglef* r, Vector2f* rp, Sprite* s, Vecto
         {
             bool collision = false;
             
-            Texture* texture = s->texture;
             float x = i + deltaX, 
                   y = t + deltaY, 
                   sx = tX, 

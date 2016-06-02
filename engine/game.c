@@ -108,8 +108,6 @@
 
     bool initGl(Game* g)
     {
-        bool success = true;
-        
         char* vertexSource = loadText("assets/default.vert");
         char* fragmentSource = loadText("assets/default.frag");
 

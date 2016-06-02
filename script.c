@@ -100,8 +100,7 @@ void tokenError(char c)
 bool getNextToken(ScriptState* s, Token* t)
 {
     int readState = 0;
-    char* charPointer, 
-        * lastCharPointer;
+    char* charPointer;
     char c;
     
     char* valueStart = 0;
@@ -206,8 +205,6 @@ bool getNextToken(ScriptState* s, Token* t)
                 t->value[min(valueLength+1, MAX_TOKEN_LENGTH)] = '\0';
                 return true;
         }
-        
-        lastCharPointer = charPointer;
         
         if(getNextCharacter(s, &charPointer))
             c = *charPointer;

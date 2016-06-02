@@ -98,6 +98,9 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
             spriteInit(&e->sprite, assetsGetTexture(&iw->game, "movingPlatform"), 32, 16);
             e->depth = -1;
             break;
+            
+        default:
+            break;
     }
     
     return e;
@@ -134,6 +137,8 @@ Entity* createEntityFromTypeIndex(Iwbtg* iw, int typeIndex, int x, int y)
         e = createEntity(iw, EntityType_movingPlatform, x, y);
     
     iw->level.entityMap[i][t] = e;
+    
+    return e;
 }
 
 void destroyEntity(Entity* e)
@@ -241,6 +246,9 @@ void entityUpdate(Entity* e, Iwbtg* iw, float dt)
             }
             
         } break;
+        
+        default:
+            break;
     }
     
     e->velocity = vector2fAdd(e->velocity, e->acceleration);

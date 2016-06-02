@@ -108,7 +108,6 @@ void textInputUpdate(TextInput* ti, Iwbtg* iw)
     if(ti->active)
     {
         // Force upper case on all input
-        int i = 0;
         
         char* text = ti->text;
         
@@ -217,7 +216,7 @@ Entity* createParticle(Iwbtg* iw, Texture* texture, float x, float y,
 void loadMap(Iwbtg* iw, char* file)
 {
     FILE* f;
-    if(f = fopen(file, "rb"))
+    if((f = fopen(file, "rb")))
     {
         fread(iw->level.entities.data, sizeof(int) * MAP_WIDTH * MAP_HEIGHT, 1, f);
         fread(iw->level.controllers.data, sizeof(int) * MAP_WIDTH * MAP_HEIGHT, 1, f);
@@ -234,7 +233,6 @@ void loadMap(Iwbtg* iw, char* file)
         for(int i = 0; i < scriptCount; ++i)
         {
             fread(&iw->level.scripts[i], sizeof(Script), 1, f);
-            int result = feof(f);
         }
         
         memset(iw->level.ground.data, 0, sizeof(int) * MAP_WIDTH * MAP_HEIGHT);
@@ -315,7 +313,7 @@ void loadGame(Iwbtg* iw)
     iw->saveState.room.y = 0;
     
     FILE* f;
-    if(f = fopen(saveFileName, "r"))
+    if((f = fopen(saveFileName, "r")))
     {
         fread(&iw->saveState, sizeof(SaveState), 1, f);
         fclose(f);

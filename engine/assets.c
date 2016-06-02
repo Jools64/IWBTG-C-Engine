@@ -110,6 +110,7 @@ Asset* assetsGetAsset(Game* g, char* name)
             a = a->next;
         }
     }
+    return 0;
 }
 
 Texture* assetsGetTexture(Game* g, char* name)

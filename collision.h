@@ -2,6 +2,7 @@ bool entityCheckPlayerCollision(Entity* e, Player* p)
 {
     if(e->active)
         return checkRectangleIntersectSprite(&p->hitBox, &p->position, &e->sprite, &e->position);
+    return false;
 }
 
 bool entityCheckPlayerCollisionAtOffset(Entity* e, Player* p, int x, int y)

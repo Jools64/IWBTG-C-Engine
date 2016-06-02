@@ -214,7 +214,7 @@ void playerUpdate(Player* p, Iwbtg* iw)
     }
     
 	Entity* warp;
-    if(warp = playerCheckCollision(p, iw, EntityType_warp))
+    if((warp = playerCheckCollision(p, iw, EntityType_warp)))
     {
         iw->room.y--;
         char buffer[128];

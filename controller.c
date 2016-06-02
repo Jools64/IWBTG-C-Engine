@@ -137,6 +137,10 @@ void controllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt)
             if(rectangleIsCollidingWithGround(&hitbox, iw, e->position.x, e->position.y))
                 e->velocity = vector2fMultiply(e->velocity, -1);
         } break;
+        
+        default:
+        
+            break;
     }
 }
 

@@ -85,9 +85,7 @@ BucketArray* bucketArrayGetFirstWithSpace(BucketArray* b)
 
 void* bucketArrayAllocate(BucketArray* b)
 {
-    int br = 0;
     b = bucketArrayGetFirstWithSpace(b);
-    int bb = 0;
     for(int i = 0; i < b->elementsPerBucket; ++i)
         if(!b->elementUsage[i])
         {
@@ -174,5 +172,5 @@ void* bucketArrayIteratorNext(BucketArrayIterator* it)
     
     it->bucket = it->bucket->nextBucket;
     it->position = 0;
-    bucketArrayIteratorNext(it);
+    return bucketArrayIteratorNext(it);
 }
