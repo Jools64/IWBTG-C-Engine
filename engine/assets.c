@@ -17,7 +17,10 @@ Texture textureLoad(Game* game, char* filePath)
         #ifdef OPENGL
             glGenTextures(1, &texture.id);
             glBindTexture(GL_TEXTURE_2D, texture.id);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture.size.x, texture.size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, texture.surface->pixels);
+            if(surface->format->BytesPerPixel == 3)
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture.size.x, texture.size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, texture.surface->pixels);
+            else
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture.size.x, texture.size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.surface->pixels);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         #else

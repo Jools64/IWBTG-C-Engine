@@ -111,7 +111,7 @@
         char* vertexSource = loadText("assets/default.vert");
         char* fragmentSource = loadText("assets/default.frag");
 
-        renderBatchInit(&g->renderBatch);
+        renderBatchInit(&g->renderBatch, g);
         
         bool compiled = compileShader(&g->defaultShader.id, vertexSource, fragmentSource);
         

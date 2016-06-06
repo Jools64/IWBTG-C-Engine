@@ -2,37 +2,16 @@ void renderBegin(Game* g)
 {
     #ifdef OPENGL
     
+        static int pos = 0;
+        pos += 2;
+        pos = pos % 480;
+    
         glEnable(GL_TEXTURE_2D);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
         glClearColor(0.0f, 0.5f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-        
-        glUseProgram(g->defaultShader.id);
-        glEnableVertexAttribArray(g->defaultShader.inVertexPos);
-        glEnableVertexAttribArray(g->defaultShader.inTexturePos);
-        
-        glActiveTexture(GL_TEXTURE0);
-        glUniform1i(g->defaultShader.uTextureSampler, 0);
-        
-        /*float w, h;
-        SDL_GL_BindTexture(assetsGetTexture(g, "glTest")->data, &w, &h);
-        printf("w: %d, h: %d\n", w, h);*/
-        glBindTexture(GL_TEXTURE_2D, assetsGetTexture(g, "glTest")->id);
-        
-        glBindBuffer(GL_ARRAY_BUFFER, g->renderBatch.vertexBuffer);
-        glVertexAttribPointer(g->defaultShader.inVertexPos, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), 0);
-        
-        glBindBuffer(GL_ARRAY_BUFFER, g->renderBatch.uvBuffer);
-        glVertexAttribPointer(g->defaultShader.inTexturePos, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), 0);
-        
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g->renderBatch.indexBuffer);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        
-        glDisableVertexAttribArray(g->defaultShader.inVertexPos);
-        glUseProgram(0);
-    
     #else
     
         SDL_SetRenderDrawColor(g->renderer, 30, 80, 200, 255);
@@ -44,7 +23,8 @@ void renderBegin(Game* g)
 void renderEnd(Game* game)
 {
     #ifdef OPENGL
-    
+        
+        renderBatchFlush(&game->renderBatch, game);
         SDL_GL_SwapWindow(game->window);
     
     #else
@@ -58,6 +38,8 @@ void rectangleDraw(Game* g, float x, float y, float w, float h,
                    float cr, float cg, float cb, float ca)
 {
     #ifdef OPENGL
+    
+        
     
     #else
     
@@ -83,7 +65,7 @@ void textureDrawExt(Game* g, Texture* t,
 {
     #ifdef OPENGL
     
-        
+        renderBatchDrawTexture(&g->renderBatch, t, x, y, w, h, tX, tY, tW, tH, g);
     
     #else
     
@@ -210,7 +192,7 @@ void textureDraw(Game* g, Texture* t, float x, float y)
 {
     #ifdef OPENGL
     
-        
+        renderBatchDrawTexture(&g->renderBatch, t, x, y, t->size.x, t->size.y, 0, 0, t->size.x, t->size.y, g);
     
     #else
         
