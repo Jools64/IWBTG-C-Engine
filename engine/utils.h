@@ -17,6 +17,43 @@ typedef struct
     float x, y;
 } Vector2f;
 
+typedef struct Matrix3f
+{
+    union
+    {
+        float values[9];
+        float values2d[3][3];
+        struct
+        {
+            // GLSL order
+            float _1x1, _1x2, _1x3, 
+                  _2x1, _2x2, _2x3, 
+                  _3x1, _3x2, _3x3;
+        };
+    };
+} Matrix3f;
+
+Matrix3f matrix3fIdentity()
+{
+    Matrix3f m = {{{
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f
+    }}};
+    
+    return m;
+}
+
+Vector2f vector2fApplyMatrix3f(Vector2f v, Matrix3f m)
+{
+    Vector2f result;
+    
+    result.x = (m._1x1 * v.x) + (m._2x1 * v.y) + m._3x1;
+    result.y = (m._1x2 * v.x) + (m._2x2 * v.y) + m._3x2;
+    
+    return result;
+}
+
 typedef struct
 {
     float x, y, w, h;

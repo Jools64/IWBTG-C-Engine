@@ -65,10 +65,14 @@ void textureDrawExt(Game* g, Texture* t,
 {
     #ifdef OPENGL
     
-        renderBatchDrawTexture(&g->renderBatch, t, x, y, w, h, tX, tY, tW, tH, g);
-    
+        renderBatchDrawTextureExt(&g->renderBatch, t, x, y, w, h, tX, tY, tW, tH,
+                                  originX, originY, angle, scaleX, scaleY, g);
+        
     #else
-    
+        
+        // TODO: Change the rotation implementation to match the OpenGL implementation.
+        //       (Scale affects the rotation origin in this function)
+        
         float scaleOffsetX = fabs(scaleX) * w * (originX / w);
         float scaleOffsetY = fabs(scaleY) * h * (originY / h);
         
