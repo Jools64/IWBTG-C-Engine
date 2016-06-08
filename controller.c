@@ -5,51 +5,50 @@ void entitySetControllerFromTypeIndex(Entity* e, int typeIndex, Iwbtg* iw)
     int x = e->position.x / GRID_SIZE;
     int y = e->position.y / GRID_SIZE;
     
-    if(typeIndex >= 0 && typeIndex <= 3) // Fast trap
+    if(typeIndex == 0) // trap
     {
         e->controller->type = ControllerType_trap;
-        e->controller->trap.direction = PI * 0.5f * typeIndex;
-        e->controller->trap.activationDistance = 400;
-        e->controller->trap.activationWidth = 32;
-        e->controller->trap.speed = 32;
-        e->controller->trap.activated = 0;
-    }
-    else if(typeIndex >= 4 && typeIndex <= 7) // Medium trap
-    {
-        e->controller->type = ControllerType_trap;
-        e->controller->trap.direction = PI * 0.5f * (typeIndex - 4);
+        e->controller->trap.direction = PI * 0.5f;
         e->controller->trap.activationDistance = 400;
         e->controller->trap.activationWidth = 32;
         e->controller->trap.speed = 16;
         e->controller->trap.activated = 0;
+        
+        Script* script = levelGetScriptAtPosition(&iw->level, x, y);
+        if(script)
+        {
+            ScriptState ss = parseScript(script->text);
+            ControllerTrap* trap = &e->controller->trap;
+            trap->direction = scriptReadNumber(&ss, "direction", 90) * (PI / 180);
+            trap->speed = scriptReadNumber(&ss, "speed", trap->speed);
+            trap->activationDistance = scriptReadNumber(&ss, "activationDistance", trap->activationDistance);
+            trap->activationWidth = scriptReadNumber(&ss, "activationWidth", trap->activationWidth);
+        }
     }
-    else if(typeIndex >= 8 && typeIndex <= 11) // Medium trap
-    {
-        e->controller->type = ControllerType_trap;
-        e->controller->trap.direction = PI * 0.5f * (typeIndex - 8);
-        e->controller->trap.activationDistance = 400;
-        e->controller->trap.activationWidth = 32;
-        e->controller->trap.speed = 4;
-        e->controller->trap.activated = 0;
-    }
-    else if(typeIndex >= 12 && typeIndex <= 13) // In out
+    else if(typeIndex == 1) // In out
     {
         e->controller->type = ControllerType_inOut;
-        e->controller->inOut.direction = PI * 0.5;
+        e->controller->inOut.direction = 90;
         e->controller->inOut.speed = 1;
         if(typeIndex == 13)
             e->controller->inOut.speed = 2;
         e->controller->inOut.distance = 32;
         e->controller->inOut.timer = 0;
         e->controller->inOut.basePosition = e->position;
+        
+        Script* script = levelGetScriptAtPosition(&iw->level, x, y);
+        if(script)
+        {
+            ScriptState ss = parseScript(script->text);
+            ControllerInOut* inOut = &e->controller->inOut;
+            inOut->direction = scriptReadNumber(&ss, "direction", inOut->direction)  * (PI / 180);
+            inOut->speed = scriptReadNumber(&ss, "speed", inOut->speed);
+            inOut->distance = scriptReadNumber(&ss, "distance", inOut->distance);
+        }
     }
-    else if(typeIndex == 16 || typeIndex == 17)
+    else if(typeIndex == 2) // Bounce
     {
         e->controller->type = ControllerType_bounce;
-        if(typeIndex == 16)
-            e->velocity.y = 1;
-        else
-            e->velocity.x = 1;
         
         Script* script = levelGetScriptAtPosition(&iw->level, x, y);
         if(script)

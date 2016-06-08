@@ -63,6 +63,7 @@ void textInputEditString(TextInput* ti, char* string, int stringMaxLength)
 {
     ti->text = string;
     ti->textMaxLength = stringMaxLength;
+    ti->cursorPosition = strlen(string);
     ti->active = true;
 }
 
@@ -312,9 +313,11 @@ void loadGame(Iwbtg* iw)
     iw->saveState.room.x = -1;
     iw->saveState.room.y = 0;
     
+    bool newGame = true;
     FILE* f;
     if((f = fopen(saveFileName, "r")))
     {
+        newGame = false;
         fread(&iw->saveState, sizeof(SaveState), 1, f);
         fclose(f);
     }
@@ -328,7 +331,8 @@ void loadGame(Iwbtg* iw)
     char buffer[128];
     loadMap(iw, getCurrentMapName(iw, buffer, 128));
     
-    p->position = iw->saveState.playerPosition;
+    if(!newGame)
+        p->position = iw->saveState.playerPosition;
 }
 
 void saveGame(Iwbtg* iw, bool position)
