@@ -8,7 +8,8 @@ typedef enum
     ControllerType_trap,
     ControllerType_inOut,
     ControllerType_bounce,
-    ControllerType_chain
+    ControllerType_chain,
+    ControllerType_boss,
 } ControllerType;
 
 typedef struct ControllerTrap
@@ -31,6 +32,11 @@ typedef struct ControllerInOut
     Vector2f basePosition;
 } ControllerInOut;
 
+typedef struct ControllerBoss
+{
+    int maxHealth, health;
+} ControllerBoss;
+
 typedef struct Controller Controller;
 typedef struct Controller
 {
@@ -39,6 +45,7 @@ typedef struct Controller
     {
         ControllerTrap trap;
         ControllerInOut inOut;
+        ControllerBoss boss;
     };
     unsigned char hasChains;
 } Controller;

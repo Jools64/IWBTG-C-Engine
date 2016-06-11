@@ -462,6 +462,7 @@ void iwbtgLoad(Iwbtg* iw)
     assetsLoadTexture(g, "assets/moving_platform.png", "movingPlatform");
     assetsLoadTexture(g, "assets/font_small.png", "fontSmall");
     assetsLoadTexture(g, "assets/gl_test.png", "glTest");
+    assetsLoadTexture(g, "assets/boss1.png", "boss");
     
     assetsLoadSound(g, "assets/jump.wav", "jump");
     assetsLoadSound(g, "assets/double_jump.wav", "doubleJump");

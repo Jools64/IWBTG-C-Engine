@@ -18,7 +18,8 @@ typedef enum EntityType
     EntityType_particle,
     EntityType_playerBullet,
     EntityType_fruit,
-    EntityType_movingPlatform
+    EntityType_movingPlatform,
+    EntityType_boss
 } EntityType;
 
 typedef struct Entity

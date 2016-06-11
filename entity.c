@@ -99,6 +99,14 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
             e->depth = -1;
             break;
             
+        case EntityType_boss:
+            spriteInit(&e->sprite, assetsGetTexture(&iw->game, "boss"), 128, 128);
+            e->controller->type = ControllerType_boss;
+            e->position.x = x - 64 + 16;
+            e->position.y = y - 64 + 16;
+            e->depth = -3;
+            break;
+            
         default:
             break;
     }
@@ -135,6 +143,8 @@ Entity* createEntityFromTypeIndex(Iwbtg* iw, int typeIndex, int x, int y)
     }
     else if(typeIndex == 7)
         e = createEntity(iw, EntityType_movingPlatform, x, y);
+    else if(typeIndex == 8)
+        e = createEntity(iw, EntityType_boss, x, y);
     
     iw->level.entityMap[i][t] = e;
     
