@@ -376,11 +376,11 @@ void iwbtgInit(Iwbtg* iw)
 {
     textInputInit(&iw->textInput);
     
-    fontInit(&iw->game.font, assetsGetTexture(&iw->game, "font"), 24, 32, "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890,.!?\"'/\\<>()=:");
+    fontInit(&iw->game.font, assetsGetTexture(&iw->game, "font"), 24, 32, "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890,.!?\"'/\\<>()=:-");
     fontSetAllLetterWidth(&iw->game.font, 20);
     
     fontInit(&iw->fontSmall, assetsGetTexture(&iw->game, "fontSmall"), 12, 16,
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890,.!?\"'/\\<>()=:");
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890,.!?\"'/\\<>()=:-");
     fontSetAllLetterWidth(&iw->fontSmall, 8);
     
     editorInit(iw);

@@ -3,10 +3,12 @@ void playerInit(Player* p, float x, float y, Iwbtg* iw)
     p->position.x = x;
     p->position.y = y;
     
+    // Note: The the player hitbox changes depending on facing direction.
+    //       x and width values should not be adjusted here.
     p->hitBox.x = 9.0f;
-    p->hitBox.y = 10.0f;
+    p->hitBox.y = 12.0f;
     p->hitBox.w = 14.0f; 
-    p->hitBox.h = 22.0f;
+    p->hitBox.h = 20.0f;
     
     spriteInit(&p->sprite, assetsGetTexture(&iw->game, "kid"), 32, 32);
     
@@ -125,6 +127,18 @@ void playerUpdate(Player* p, Iwbtg* iw)
         {
             p->sprite.scale.x = 1;
             p->velocity.x += 3;
+        }
+        
+        // Change the hitbox for different facing directions
+        if(p->sprite.scale.x == -1)
+        {
+            p->hitBox.x = 9.0f;
+            p->hitBox.w = 12.0f; 
+        }
+        else
+        {
+            p->hitBox.x = 11.0f;
+            p->hitBox.w = 12.0f; 
         }
         
         // Perform sprite animation logic

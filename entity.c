@@ -76,7 +76,7 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
             
         case EntityType_warp:
             spriteInit(&e->sprite, assetsGetTexture(&iw->game, "warp"), 128, 128);
-            e->depth = -1;
+            e->depth = -2;
             break;
             
         case EntityType_playerBullet: {
@@ -84,7 +84,7 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
             int frames[] = { 0, 1 };
             spriteAddAnimation(&e->sprite, Animations_default, &frames[0], 2, 12);
             spritePlayAnimation(&e->sprite, Animations_default);
-            e->depth = -2;
+            e->depth = -3;
         } break;
         
         case EntityType_fruit:

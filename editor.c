@@ -63,19 +63,19 @@ void editorUpdate(Iwbtg* iw)
                 levelRemoveScript(&iw->level, mx, my);
             
         }
-    }
-            
-    if(checkKeyPressed(&iw->game, KEY_LEFT))
-    {
-        e->mode--;
-        if(e->mode < 0)
-            e->mode = EditorMode_count-1;
-    }
-    if(checkKeyPressed(&iw->game, KEY_RIGHT))
-    {
-        e->mode++;
-        if(e->mode > EditorMode_count-1)
-            e->mode = 0;
+    
+        if(checkKeyPressed(&iw->game, KEY_LEFT))
+        {
+            e->mode--;
+            if(e->mode < 0)
+                e->mode = EditorMode_count-1;
+        }
+        if(checkKeyPressed(&iw->game, KEY_RIGHT))
+        {
+            e->mode++;
+            if(e->mode > EditorMode_count-1)
+                e->mode = 0;
+        }
     }
     
     if(checkKeyPressed(g, KEY_EDITOR_TOGGLE))

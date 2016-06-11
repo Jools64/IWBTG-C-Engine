@@ -121,12 +121,12 @@ bool getNextToken(ScriptState* s, Token* t)
                 {
                     // Nothing
                 }
-                else if(charIsAlphabetic(c) || c == '-' || c == '_') // Start of identifier
+                else if(charIsAlphabetic(c) || c == '_') // Start of identifier
                 {
                     valueStart = charPointer;
                     readState = 1;
                 }
-                else if(charIsNumeric(c))
+                else if(charIsNumeric(c) || c == '-')
                 {
                     valueStart = charPointer;
                     readState = 2;
