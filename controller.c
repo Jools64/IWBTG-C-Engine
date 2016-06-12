@@ -137,6 +137,19 @@ void controllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt)
                 e->velocity = vector2fMultiply(e->velocity, -1);
         } break;
         
+        case ControllerType_boss: {
+            
+            ControllerBoss* b = &c->boss;
+            
+            if(b->health <= 0)
+            {
+                if(iw->level.boss == e)
+                    iw->level.boss = 0;
+                destroyEntity(e);
+            }
+            
+        } break;
+        
         default:
         
             break;

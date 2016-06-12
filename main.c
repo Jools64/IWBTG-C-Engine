@@ -463,6 +463,7 @@ void iwbtgLoad(Iwbtg* iw)
     assetsLoadTexture(g, "assets/font_small.png", "fontSmall");
     assetsLoadTexture(g, "assets/gl_test.png", "glTest");
     assetsLoadTexture(g, "assets/boss1.png", "boss");
+    assetsLoadTexture(g, "assets/boss_health_bar.png", "bossHealthBar");
     
     assetsLoadSound(g, "assets/jump.wav", "jump");
     assetsLoadSound(g, "assets/double_jump.wav", "doubleJump");
@@ -618,6 +619,27 @@ void iwbtgDraw(Iwbtg* iw)
                 
                 rectangleDraw(g, 0, 0, g->size.x, g->size.y, 0.15, 0.15, 0.3, t * 0.3);
                 spriteDraw(g, s, cx, cy);
+            }
+        }
+        else
+        {
+            if(iw->level.boss)
+            {
+                ControllerBoss* bc = &iw->level.boss->controller->boss;
+                
+                textureDrawExt(g, assetsGetTexture(g, "bossHealthBar"), 
+                            24, 16, 912, 32,
+                            0, 0, 912, 32,
+                            0, 0, 1, 1, 0, 1,
+                            0, makeColor(1, 1, 1, 1));
+                            
+                float hp = (float)bc->health / bc->maxHealth;
+                            
+                textureDrawExt(g, assetsGetTexture(g, "bossHealthBar"), 
+                            24, 16, 2 + (908 * hp), 32,
+                            0, 32, 2 + (908 * hp), 32,
+                            0, 0, 1, 1, 0, 1,
+                            0, makeColor(1, 1, 1, 1));
             }
         }
         

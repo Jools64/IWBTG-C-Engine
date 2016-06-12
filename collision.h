@@ -21,7 +21,7 @@ bool entityCheckPlayerCollisionAtOffset(Entity* e, Player* p, int x, int y)
     return result;
 }
 
-bool rectangleCheckCollision(Rectanglef* r, Iwbtg* iw, EntityType type)
+Entity* rectangleCheckCollision(Rectanglef* r, Iwbtg* iw, EntityType type)
 {
     Vector2f offset = { 0.0f, 0.0f };
     
@@ -31,11 +31,11 @@ bool rectangleCheckCollision(Rectanglef* r, Iwbtg* iw, EntityType type)
         if(e->active && e->type == type)
         {
             if(checkRectangleIntersectSprite(r, &offset, &e->sprite, &e->position))
-                return true;
+                return e;
         }
     }
     
-    return false;
+    return 0;
 }
 
 Entity* playerCheckCollision(Player* p, Iwbtg* iw, EntityType type)

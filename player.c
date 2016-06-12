@@ -6,9 +6,9 @@ void playerInit(Player* p, float x, float y, Iwbtg* iw)
     // Note: The the player hitbox changes depending on facing direction.
     //       x and width values should not be adjusted here.
     p->hitBox.x = 9.0f;
-    p->hitBox.y = 12.0f;
+    p->hitBox.y = 11.0f;
     p->hitBox.w = 14.0f; 
-    p->hitBox.h = 20.0f;
+    p->hitBox.h = 21.0f;
     
     spriteInit(&p->sprite, assetsGetTexture(&iw->game, "kid"), 32, 32);
     
@@ -47,7 +47,7 @@ void playerUpdate(Player* p, Iwbtg* iw)
 		float ty = p->position.y;
 		p->position.y = floor(p->position.y) - 0.01;
 		
-        if(playerCheckCollision(p, iw, EntityType_spike) || playerCheckCollision(p, iw, EntityType_fruit))
+        if(playerCheckCollision(p, iw, EntityType_spike) || playerCheckCollision(p, iw, EntityType_fruit) || playerCheckCollision(p, iw, EntityType_boss))
         {
             for(int t = 1; t <= 8; ++t)
                 for(int i = 0; i < 16; ++i)
@@ -133,12 +133,12 @@ void playerUpdate(Player* p, Iwbtg* iw)
         if(p->sprite.scale.x == -1)
         {
             p->hitBox.x = 9.0f;
-            p->hitBox.w = 12.0f; 
+            p->hitBox.w = 11.0f; 
         }
         else
         {
-            p->hitBox.x = 11.0f;
-            p->hitBox.w = 12.0f; 
+            p->hitBox.x = 12.0f;
+            p->hitBox.w = 11.0f; 
         }
         
         // Perform sprite animation logic

@@ -30,6 +30,7 @@ typedef struct Level
     Script scripts[32];
     Grid controllers;
     Entity* entityMap[MAP_WIDTH][MAP_HEIGHT];
+    Entity* boss;
     
 } Level;
 
@@ -96,11 +97,7 @@ void loadMap(Iwbtg* iw, char* file);
 void saveMap(Iwbtg* iw, char* file);
 void loadGame(Iwbtg* iw);
 void saveGame(Iwbtg* iw, bool position);
-bool entityCheckPlayerCollision(Entity* e, Player* p);
-bool rectangleCheckCollision(Rectanglef* r, Iwbtg* iw, EntityType type);
-Entity* playerCheckCollision(Player* p, Iwbtg* iw, EntityType type);
-Entity* playerCheckCollisionAtOffset(Player* p, Iwbtg* iw, EntityType type, int x, int y);
-bool rectangleIsCollidingWithGround(Rectanglef* r, Iwbtg* iw, float offsetX, float offsetY);
+
 bool playerIsCollidingWithGround(Player* p, Iwbtg* iw, float offsetX, float offsetY);
 void playerInit(Player* p, float x, float y, Iwbtg* iw);
 void playerUpdate(Player* p, Iwbtg* iw);

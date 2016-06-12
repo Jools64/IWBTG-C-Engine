@@ -104,6 +104,7 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
             e->controller->type = ControllerType_boss;
             e->position.x = x - 64 + 16;
             e->position.y = y - 64 + 16;
+            e->controller->boss.health = e->controller->boss.maxHealth = 50;
             e->depth = -3;
             break;
             
@@ -144,8 +145,10 @@ Entity* createEntityFromTypeIndex(Iwbtg* iw, int typeIndex, int x, int y)
     else if(typeIndex == 7)
         e = createEntity(iw, EntityType_movingPlatform, x, y);
     else if(typeIndex == 8)
+    {
         e = createEntity(iw, EntityType_boss, x, y);
-    
+        iw->level.boss = e;
+    }
     iw->level.entityMap[i][t] = e;
     
     return e;
@@ -222,10 +225,18 @@ void entityUpdate(Entity* e, Iwbtg* iw, float dt)
             || e->position.x < -4 || e->position.y < -4)
                 destroyEntity(e);
             
+            // Lazy
             Rectanglef hitbox = { 0, 0, 4, 4 };
+            Rectanglef hitbox2 = { e->position.x, e->position.y, 4, 4 };
             
+            Entity* other;
             if(rectangleIsCollidingWithGround(&hitbox, iw, e->position.x, e->position.y))
                 destroyEntity(e);
+            else if((other = rectangleCheckCollision(&hitbox2, iw, EntityType_boss)))
+            {
+                other->controller->boss.health--;
+                destroyEntity(e);
+            }
             
             break;
             
