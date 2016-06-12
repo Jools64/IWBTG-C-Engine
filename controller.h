@@ -32,9 +32,28 @@ typedef struct ControllerInOut
     Vector2f basePosition;
 } ControllerInOut;
 
+typedef enum BossActionType
+{
+    BossActionType_wait,
+    BossActionType_move,
+    BossActionType_projectileBurst,
+    BossActionType_aimedProjectile,
+    BossActionType_projectile,
+    BossActionType_teleport
+}
+
+typedef struct BossAction
+{
+    Vector2f position;
+    float time, speed, direction;
+    int count;
+}
+
 typedef struct ControllerBoss
 {
     int maxHealth, health;
+    BossAction actionQueue[16];
+    int actionQueueHead, actionQueueTail;
 } ControllerBoss;
 
 typedef struct Controller Controller;
