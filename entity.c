@@ -106,6 +106,23 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
             e->position.y = y - 64 + 16;
             e->controller->boss.health = e->controller->boss.maxHealth = 50;
             e->depth = -3;
+            
+            BossAction* a;
+            a = bossAddAction(e, BossActionType_move);
+            a->move.destination = v2f(32, 32);
+            //bossAddAction(e, BossActionType_wait);
+            bossAddAction(e, BossActionType_projectileBurst);
+            
+            a = bossAddAction(e, BossActionType_move);
+            a->move.destination = v2f(960 - 128 - 32, 32);
+            bossAddAction(e, BossActionType_wait);
+            bossAddAction(e, BossActionType_projectileBurst);
+            
+            a = bossAddAction(e, BossActionType_move);
+            a->move.destination = v2f(480 - 64, 32);
+            bossAddAction(e, BossActionType_wait);
+            bossAddAction(e, BossActionType_projectileBurst);
+            
             break;
             
         default:

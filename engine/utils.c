@@ -36,6 +36,12 @@ bool checkFileExists(char* filePath)
     return false;
 }
 
+Vector2f v2f(float x, float y)
+{
+    Vector2f out = { x, y };
+    return out;
+}
+
 Vector2f vector2fAdd(Vector2f a, Vector2f b)
 {
     Vector2f result = { a.x + b.x, a.y + b.y };
@@ -116,6 +122,12 @@ float vector2fNormalizedDotProduct(Vector2f a, Vector2f b)
     b = vector2fNormalize(b);
     
     return (a.x * b.x) + (a.y * b.y);
+}
+
+Vector2f speedDirectionToVector2f(float speed, float direction)
+{
+    Vector2f result = { cosf(degToRad(direction)) * speed, sinf(degToRad(direction)) * speed };
+    return result;
 }
 
 bool rectanglefIntersectAt(float aX, float aY, Rectanglef* a,

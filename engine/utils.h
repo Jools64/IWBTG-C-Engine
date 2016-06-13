@@ -1,9 +1,7 @@
-#ifndef UTILS_H
-#define UTILS_H
-
-#define max(a,b) a > b ? a : b
-#define min(a,b) a < b ? a : b
-#define clamp(value,min,max) value > max ? max : (value < min ? min : value)
+#define max(a,b) (a > b ? a : b)
+#define min(a,b) (a < b ? a : b)
+#define clamp(value,min,max) (value > max ? max : (value < min ? min : value))
+#define degToRad(degrees) (degrees * (PI / 180))
 
 typedef struct Game Game;
 
@@ -71,6 +69,7 @@ int sign(float value);
 char* cloneString(Game* g, char* string);
 bool checkFileExists(char* filePath);
 
+Vector2f v2f(float x, float y);
 Vector2f vector2fAdd(Vector2f a, Vector2f b);
 Vector2f vector2fSubtract(Vector2f a, Vector2f b);
 float vector2fMagnitude(Vector2f a);
@@ -87,5 +86,3 @@ bool rectanglefIntersectAt(float aX, float aY, Rectanglef* a,
 void gridSet(Grid* g, int x, int y, int value);
 int gridGet(Grid* g, int x, int y);
 void gridInit(Grid* g, int width, int height, MemoryPool* m);
-
-#endif // UTILS_H

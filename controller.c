@@ -1,3 +1,53 @@
+int bossGetNextActionIndex(int currentAction)
+{
+    int index = currentAction + 1;
+    if(index > MAX_ACTIONS_PER_BOSS)
+        index = 0;
+    return index;
+}
+
+bool bossIsActionQueueFull(ControllerBoss* b)
+{
+    return (bossGetNextActionIndex(b->actionQueueTail) == b->actionQueueHead);
+}
+
+BossAction* bossAddAction(Entity* e, BossActionType type)
+{
+    ControllerBoss* b = &e->controller->boss;
+    if(!bossIsActionQueueFull(b))
+    {
+        BossAction* a = &b->actionQueue[b->actionQueueTail];
+        b->actionQueueTail = bossGetNextActionIndex(b->actionQueueTail);
+        a->type = type;
+        a->active = true;
+        switch(type)
+        {
+            case BossActionType_wait:
+                a->wait.time = 0.2;
+                break;
+                
+            case BossActionType_move:
+                a->move.time = 2;  
+                a->move.destination = v2f(32, 64);
+                break;
+                
+            case BossActionType_projectileBurst:
+                a->projectileBurst.count = 8;
+                a->projectileBurst.speed = 8;
+                a->projectileBurst.projectileEntityType = EntityType_fruit;
+                break;
+            
+            default:
+                break;
+        }
+        return a;
+    }
+    else
+        printf("Error: Boss action queue was full, could not add another action.\n");
+    
+    return 0;
+}
+
 void entitySetControllerFromTypeIndex(Entity* e, int typeIndex, Iwbtg* iw)
 {
     e->controller = &e->controllerData;
@@ -61,6 +111,17 @@ void entitySetControllerFromTypeIndex(Entity* e, int typeIndex, Iwbtg* iw)
     else if(typeIndex == 63) // Chaining controllers
     {
         e->controller->type = ControllerType_chain;
+    }
+}
+
+void bossNextAction(ControllerBoss* b)
+{
+    b->actionQueue[b->actionQueueHead].active = false;
+    if(b->actionQueueTail != b->actionQueueHead && b->actionQueue[bossGetNextActionIndex(b->actionQueueHead)].active)
+    {
+        b->actionQueueHead = bossGetNextActionIndex(b->actionQueueHead);
+        b->actionQueue[b->actionQueueHead].initialized = false;
+        b->actionTime = 0;
     }
 }
 
@@ -140,6 +201,57 @@ void controllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt)
         case ControllerType_boss: {
             
             ControllerBoss* b = &c->boss;
+            
+            b->actionTime += dt;
+            if(b->actionQueue[b->actionQueueHead].active)
+            {
+                BossAction* a = &b->actionQueue[b->actionQueueHead];
+                
+                switch(a->type)
+                {
+                    case BossActionType_wait:
+                        if(b->actionTime > a->wait.time)
+                            bossNextAction(b);
+                        break;
+                        
+                    case BossActionType_move:
+                        if(!a->initialized)
+                        {
+                            a->move.start = e->position;
+                            a->initialized = true;
+                        }
+                        
+                        e->position = vector2fLerp(a->move.start, a->move.destination, clamp(b->actionTime / a->move.time, 0, 1));
+                        
+                        if(b->actionTime >= a->move.time)
+                        {
+                            printf("Done moving m8\n");
+                            bossNextAction(b);
+                        }
+                        else
+                            printf("Time: %f\n", clamp(b->actionTime / a->move.time, 0, 1));
+                        break;
+                        
+                    case BossActionType_projectileBurst:
+                        
+                        for(int i = 0; i < a->projectileBurst.count; ++i)
+                        {
+                            Entity* p = createEntity(iw, a->projectileBurst.projectileEntityType, 
+                                e->position.x + (e->sprite.size.x / 2), e->position.y + (e->sprite.size.y / 2));
+                            p->position.x -= (p->sprite.size.x / 2);
+                            p->position.y -= (p->sprite.size.y / 2);
+                            p->velocity = speedDirectionToVector2f(a->projectileBurst.speed, (360 / a->projectileBurst.count) * i);
+                        }
+                        
+                        bossNextAction(b);
+                        break;
+                        
+                    default:
+                        break;
+                }
+            }
+            else
+                bossNextAction(b);
             
             if(b->health <= 0)
             {

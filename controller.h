@@ -36,24 +36,48 @@ typedef enum BossActionType
 {
     BossActionType_wait,
     BossActionType_move,
-    BossActionType_projectileBurst,
-    BossActionType_aimedProjectile,
-    BossActionType_projectile,
-    BossActionType_teleport
-}
+    BossActionType_projectileBurst
+} BossActionType;
+
+typedef struct BossActionWait
+{
+    float time;
+} BossActionWait;
+
+typedef struct BossActionMove
+{
+    float time;
+    Vector2f destination, start;
+} BossActionMove;
+
+typedef struct BossActionProjectileBurst
+{
+    int count;
+    float speed;
+    int projectileEntityType;
+} BossActionProjectileBurst;
 
 typedef struct BossAction
 {
-    Vector2f position;
-    float time, speed, direction;
-    int count;
-}
+    BossActionType type;
+    bool active, initialized;
+    union
+    {
+        BossActionWait wait;
+        BossActionMove move;
+        BossActionProjectileBurst projectileBurst;
+    };
+} BossAction;
 
+// TODO: Boss controller should be moved out of controller system as
+//       the data structure is quite large.
+#define MAX_ACTIONS_PER_BOSS 32
 typedef struct ControllerBoss
 {
     int maxHealth, health;
-    BossAction actionQueue[16];
+    BossAction actionQueue[MAX_ACTIONS_PER_BOSS];
     int actionQueueHead, actionQueueTail;
+    float actionTime;
 } ControllerBoss;
 
 typedef struct Controller Controller;
@@ -68,6 +92,10 @@ typedef struct Controller
     };
     unsigned char hasChains;
 } Controller;
+
+int bossGetNextActionIndex(int currentAction);
+bool bossIsActionQueueFull(ControllerBoss* b);
+BossAction* bossAddAction(Entity* e, BossActionType type);
 
 void entitySetControllerFromTypeIndex(Entity* e, int typeIndex, Iwbtg* iw);
 void controllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt);
