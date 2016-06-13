@@ -1,9 +1,14 @@
 int bossGetNextActionIndex(int currentAction)
 {
     int index = currentAction + 1;
-    if(index > MAX_ACTIONS_PER_BOSS)
+    if(index >= MAX_ACTIONS_PER_BOSS)
         index = 0;
     return index;
+}
+
+bool bossIsActionQueueEmpty(ControllerBoss* b)
+{
+    return (b->actionQueueTail == b->actionQueueHead);
 }
 
 bool bossIsActionQueueFull(ControllerBoss* b)
@@ -23,7 +28,7 @@ BossAction* bossAddAction(Entity* e, BossActionType type)
         switch(type)
         {
             case BossActionType_wait:
-                a->wait.time = 0.2;
+                a->wait.time = 0.1;
                 break;
                 
             case BossActionType_move:
@@ -46,6 +51,17 @@ BossAction* bossAddAction(Entity* e, BossActionType type)
         printf("Error: Boss action queue was full, could not add another action.\n");
     
     return 0;
+}
+
+void bossNextAction(ControllerBoss* b)
+{
+    b->actionQueue[b->actionQueueHead].active = false;
+    if(!bossIsActionQueueEmpty(b))
+    {
+        b->actionQueueHead = bossGetNextActionIndex(b->actionQueueHead);
+        b->actionQueue[b->actionQueueHead].initialized = false;
+        b->actionTime = 0;
+    }
 }
 
 void entitySetControllerFromTypeIndex(Entity* e, int typeIndex, Iwbtg* iw)
@@ -111,17 +127,6 @@ void entitySetControllerFromTypeIndex(Entity* e, int typeIndex, Iwbtg* iw)
     else if(typeIndex == 63) // Chaining controllers
     {
         e->controller->type = ControllerType_chain;
-    }
-}
-
-void bossNextAction(ControllerBoss* b)
-{
-    b->actionQueue[b->actionQueueHead].active = false;
-    if(b->actionQueueTail != b->actionQueueHead && b->actionQueue[bossGetNextActionIndex(b->actionQueueHead)].active)
-    {
-        b->actionQueueHead = bossGetNextActionIndex(b->actionQueueHead);
-        b->actionQueue[b->actionQueueHead].initialized = false;
-        b->actionTime = 0;
     }
 }
 
@@ -224,12 +229,7 @@ void controllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt)
                         e->position = vector2fLerp(a->move.start, a->move.destination, clamp(b->actionTime / a->move.time, 0, 1));
                         
                         if(b->actionTime >= a->move.time)
-                        {
-                            printf("Done moving m8\n");
                             bossNextAction(b);
-                        }
-                        else
-                            printf("Time: %f\n", clamp(b->actionTime / a->move.time, 0, 1));
                         break;
                         
                     case BossActionType_projectileBurst:

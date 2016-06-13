@@ -106,23 +106,6 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
             e->position.y = y - 64 + 16;
             e->controller->boss.health = e->controller->boss.maxHealth = 50;
             e->depth = -3;
-            
-            BossAction* a;
-            a = bossAddAction(e, BossActionType_move);
-            a->move.destination = v2f(32, 32);
-            //bossAddAction(e, BossActionType_wait);
-            bossAddAction(e, BossActionType_projectileBurst);
-            
-            a = bossAddAction(e, BossActionType_move);
-            a->move.destination = v2f(960 - 128 - 32, 32);
-            bossAddAction(e, BossActionType_wait);
-            bossAddAction(e, BossActionType_projectileBurst);
-            
-            a = bossAddAction(e, BossActionType_move);
-            a->move.destination = v2f(480 - 64, 32);
-            bossAddAction(e, BossActionType_wait);
-            bossAddAction(e, BossActionType_projectileBurst);
-            
             break;
             
         default:
@@ -180,6 +163,34 @@ void destroyAllEntities(Iwbtg* iw)
 {
     for(int i = 0; i < MAX_ENTITIES; ++i)
         iw->entities[i].active = false;
+}
+
+// TODO: Remove this temporary code
+void addFirstBossActions(Entity* e)
+{
+    BossAction* a;
+    a = bossAddAction(e, BossActionType_move);
+    a->move.destination = v2f(128, 128);
+    a->move.time = 1;
+    a = bossAddAction(e, BossActionType_projectileBurst);
+    
+    a = bossAddAction(e, BossActionType_move);
+    a->move.destination = v2f(960 - 128 - 128, 128);
+    a = bossAddAction(e, BossActionType_projectileBurst);
+    
+    a = bossAddAction(e, BossActionType_move);
+    a->move.destination = v2f(480 - 64, 128);
+    a->move.time = 1;
+    a = bossAddAction(e, BossActionType_projectileBurst);
+    
+    
+    a = bossAddAction(e, BossActionType_move);
+    a->move.destination = v2f(480 - 64, 320);
+    a->move.time = 1;
+    a = bossAddAction(e, BossActionType_projectileBurst);
+    a = bossAddAction(e, BossActionType_move);
+    a->move.destination = v2f(480 - 64, 128);
+    a = bossAddAction(e, BossActionType_projectileBurst);
 }
 
 void entityUpdate(Entity* e, Iwbtg* iw, float dt)
@@ -282,7 +293,11 @@ void entityUpdate(Entity* e, Iwbtg* iw, float dt)
                 if(playerIsCollidingWithGround(&iw->player, iw, 0, e->velocity.y))
                     iw->player.position = vector2fSubtract(iw->player.position, e->velocity);
             }
-            
+        } break;
+        
+        case EntityType_boss: {
+            if(bossIsActionQueueEmpty(&e->controller->boss))
+                addFirstBossActions(e);
         } break;
         
         default:
