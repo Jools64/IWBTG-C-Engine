@@ -92,6 +92,7 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
             int frames[] = { 0, 1 };
             spriteAddAnimation(&e->sprite, Animations_default, &frames[0], 2, 6);
             spritePlayAnimation(&e->sprite, Animations_default);
+            e->depth = -3;
             break;
             
         case EntityType_movingPlatform:
@@ -105,7 +106,14 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
             e->position.x = x - 64 + 16;
             e->position.y = y - 64 + 16;
             e->controller->boss.health = e->controller->boss.maxHealth = 50;
-            e->depth = -3;
+            e->controller->boss.actionQueueHead = e->controller->boss.actionQueueTail = 0;
+            e->controller->boss.initialized = false;
+            for(int i = 0; i < MAX_ACTIONS_PER_BOSS; ++i)
+            {
+                e->controller->boss.activeActions[i] = 0;
+                e->controller->boss.actionQueue[i].active = 0;
+            }
+            e->depth = -4;
             break;
             
         default:
@@ -169,21 +177,21 @@ void destroyAllEntities(Iwbtg* iw)
 void addFirstBossActions(Entity* e)
 {
     BossAction* a;
+    
+    // Burst bullets and stuff
+    a = bossAddAction(e, BossActionType_wait);
+    a->wait.time = 0.2;
     a = bossAddAction(e, BossActionType_move);
     a->move.destination = v2f(128, 128);
     a->move.time = 1;
     a = bossAddAction(e, BossActionType_projectileBurst);
-    
     a = bossAddAction(e, BossActionType_move);
     a->move.destination = v2f(960 - 128 - 128, 128);
     a = bossAddAction(e, BossActionType_projectileBurst);
-    
     a = bossAddAction(e, BossActionType_move);
     a->move.destination = v2f(480 - 64, 128);
     a->move.time = 1;
     a = bossAddAction(e, BossActionType_projectileBurst);
-    
-    
     a = bossAddAction(e, BossActionType_move);
     a->move.destination = v2f(480 - 64, 320);
     a->move.time = 1;
@@ -191,6 +199,25 @@ void addFirstBossActions(Entity* e)
     a = bossAddAction(e, BossActionType_move);
     a->move.destination = v2f(480 - 64, 128);
     a = bossAddAction(e, BossActionType_projectileBurst);
+    a = bossAddAction(e, BossActionType_wait);
+    a->wait.time = 2;
+    
+    // Fly around the edges of the screen
+    a = bossAddAction(e, BossActionType_move);
+    a->move.destination = v2f(480 - 64, 64);
+    a->move.time = 0.2;
+    a = bossAddAction(e, BossActionType_move);
+    a->move.destination = v2f(960 - 128 - 64, 64);
+    a->move.time = 1.0;
+    a = bossAddAction(e, BossActionType_move);
+    a->move.destination = v2f(960 - 128  - 64, 540 - 128);
+    a->move.time = 1.0;
+    a = bossAddAction(e, BossActionType_move);
+    a->move.destination = v2f(64, 540 - 128);
+    a->move.time = 1.0;
+    a = bossAddAction(e, BossActionType_move);
+    a->move.destination = v2f(64, 0);
+    a->move.time = 1.0;
 }
 
 void entityUpdate(Entity* e, Iwbtg* iw, float dt)
@@ -269,7 +296,11 @@ void entityUpdate(Entity* e, Iwbtg* iw, float dt)
             break;
             
         case EntityType_fruit:
-            //e->sprite.angle += 0.01 * PI;
+            if(e->position.x > iw->game.size.x
+            || e->position.y > iw->game.size.y
+            || e->position.x < -e->sprite.size.x
+            || e->position.y < -e->sprite.size.y)
+                destroyEntity(e);
             break;
             
         case EntityType_movingPlatform: {

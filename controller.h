@@ -52,15 +52,16 @@ typedef struct BossActionMove
 
 typedef struct BossActionProjectileBurst
 {
-    int count;
-    float speed;
+    int count, repeat;
+    float speed, interval, direction, rotation, shotTimer;
     int projectileEntityType;
 } BossActionProjectileBurst;
 
 typedef struct BossAction
 {
     BossActionType type;
-    bool active, initialized;
+    float time;
+    bool active, initialized, parallel;
     union
     {
         BossActionWait wait;
@@ -75,9 +76,10 @@ typedef struct BossAction
 typedef struct ControllerBoss
 {
     int maxHealth, health;
+    bool initialized;
     BossAction actionQueue[MAX_ACTIONS_PER_BOSS];
+    BossAction* activeActions[MAX_ACTIONS_PER_BOSS];
     int actionQueueHead, actionQueueTail;
-    float actionTime;
 } ControllerBoss;
 
 typedef struct Controller Controller;

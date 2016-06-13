@@ -206,7 +206,7 @@ Entity* createParticle(Iwbtg* iw, Texture* texture, float x, float y,
     e->spin = 1;
     e->friction = 2;
     e->spinFriction = 0.05;
-    e->depth = -2;
+    e->depth = -10;
 
     spriteInit(&e->sprite, texture, texture->size.x, texture->size.y);
     e->sprite.additiveBlend = true;

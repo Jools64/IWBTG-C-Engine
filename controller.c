@@ -13,7 +13,36 @@ bool bossIsActionQueueEmpty(ControllerBoss* b)
 
 bool bossIsActionQueueFull(ControllerBoss* b)
 {
-    return (bossGetNextActionIndex(b->actionQueueTail) == b->actionQueueHead);
+    return (bossGetNextActionIndex(b->actionQueueTail) == b->actionQueueHead 
+         || b->actionQueue[bossGetNextActionIndex(b->actionQueueTail)].active);
+}
+
+bool bossIsActionBlocking(ControllerBoss* b)
+{
+    for(int i = 0; i < MAX_ACTIONS_PER_BOSS; ++i)
+        if(b->activeActions[i] && !b->activeActions[i]->parallel)
+            return true;
+    return false;
+}
+
+void bossAddActiveAction(ControllerBoss* b, BossAction* action)
+{
+    for(int i = 0; i < MAX_ACTIONS_PER_BOSS; ++i)
+        if(!b->activeActions[i])
+        {
+            b->activeActions[i] = action;
+            return;
+        }
+}
+
+void bossRemoveActiveAction(ControllerBoss* b, BossAction* action)
+{
+    for(int i = 0; i < MAX_ACTIONS_PER_BOSS; ++i)
+        if(b->activeActions[i] == action)
+        {
+            b->activeActions[i] = 0;
+            return;
+        }
 }
 
 BossAction* bossAddAction(Entity* e, BossActionType type)
@@ -25,21 +54,29 @@ BossAction* bossAddAction(Entity* e, BossActionType type)
         b->actionQueueTail = bossGetNextActionIndex(b->actionQueueTail);
         a->type = type;
         a->active = true;
+        a->time = 0;
         switch(type)
         {
             case BossActionType_wait:
                 a->wait.time = 0.1;
+                a->parallel = false;
                 break;
                 
             case BossActionType_move:
                 a->move.time = 2;  
                 a->move.destination = v2f(32, 64);
+                a->parallel = false;
                 break;
                 
             case BossActionType_projectileBurst:
                 a->projectileBurst.count = 8;
                 a->projectileBurst.speed = 8;
+                a->projectileBurst.repeat = 4;
+                a->projectileBurst.interval = 0.2;
+                a->projectileBurst.direction = 0;
+                a->projectileBurst.rotation = 20;
                 a->projectileBurst.projectileEntityType = EntityType_fruit;
+                a->parallel = true;
                 break;
             
             default:
@@ -60,7 +97,7 @@ void bossNextAction(ControllerBoss* b)
     {
         b->actionQueueHead = bossGetNextActionIndex(b->actionQueueHead);
         b->actionQueue[b->actionQueueHead].initialized = false;
-        b->actionTime = 0;
+        bossAddActiveAction(b, &b->actionQueue[b->actionQueueHead]);
     }
 }
 
@@ -207,16 +244,31 @@ void controllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt)
             
             ControllerBoss* b = &c->boss;
             
-            b->actionTime += dt;
-            if(b->actionQueue[b->actionQueueHead].active)
+            if(!b->initialized)
             {
-                BossAction* a = &b->actionQueue[b->actionQueueHead];
+                b->initialized = true;
+                
+                // Take the first action in the queue
+                if(!bossIsActionQueueEmpty(b))
+                {
+                    b->actionQueue[0].initialized = false;
+                    bossAddActiveAction(b, &b->actionQueue[0]);
+                }
+            }
+
+            for(int i = 0; i < MAX_ACTIONS_PER_BOSS; ++i)
+            {
+                BossAction* a = b->activeActions[i];
+                if(a == 0)
+                    continue;
+                
+                a->time += dt;
                 
                 switch(a->type)
                 {
                     case BossActionType_wait:
-                        if(b->actionTime > a->wait.time)
-                            bossNextAction(b);
+                        if(a->time > a->wait.time)
+                            bossRemoveActiveAction(b, a);
                         break;
                         
                     case BossActionType_move:
@@ -226,31 +278,54 @@ void controllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt)
                             a->initialized = true;
                         }
                         
-                        e->position = vector2fLerp(a->move.start, a->move.destination, inOutEase(clamp(b->actionTime / a->move.time, 0, 1)));
+                        e->position = vector2fLerp(a->move.start, a->move.destination, inOutEase(clamp(a->time / a->move.time, 0, 1)));
                         
-                        if(b->actionTime >= a->move.time)
-                            bossNextAction(b);
+                        if(a->time >= a->move.time)
+                            bossRemoveActiveAction(b, a);
                         break;
                         
-                    case BossActionType_projectileBurst:
+                    case BossActionType_projectileBurst: {
                         
-                        for(int i = 0; i < a->projectileBurst.count; ++i)
+                        BossActionProjectileBurst* pb = &a->projectileBurst;
+                        
+                        if(!a->initialized)
+                            pb->shotTimer = 0;
+                        
+                        pb->shotTimer += dt;
+                        
+                        // TODO: do something a little smarter here so that
+                        //       if two shots occur on the same frame, their positions
+                        //       are correctly seperated from each other.
+                        while(pb->shotTimer > pb->interval)
                         {
-                            Entity* p = createEntity(iw, a->projectileBurst.projectileEntityType, 
-                                e->position.x + (e->sprite.size.x / 2), e->position.y + (e->sprite.size.y / 2));
-                            p->position.x -= (p->sprite.size.x / 2);
-                            p->position.y -= (p->sprite.size.y / 2);
-                            p->velocity = speedDirectionToVector2f(a->projectileBurst.speed, (360 / a->projectileBurst.count) * i);
+                            for(int i = 0; i < pb->count; ++i)
+                            {
+                                Entity* p = createEntity(iw, pb->projectileEntityType, 
+                                    e->position.x + (e->sprite.size.x / 2), e->position.y + (e->sprite.size.y / 2));
+                                p->position.x -= (p->sprite.size.x / 2);
+                                p->position.y -= (p->sprite.size.y / 2);
+                                p->velocity = speedDirectionToVector2f(pb->speed, pb->direction + ((360 / pb->count) * i));
+                                
+                            }
+                            
+                            pb->direction += pb->rotation;
+                            pb->shotTimer -= pb->interval;
                         }
                         
-                        bossNextAction(b);
-                        break;
+                        if(a->time > pb->interval * pb->repeat)
+                            bossRemoveActiveAction(b, a);
+                    } break;
                         
                     default:
                         break;
                 }
+                
+                if(!a->initialized)
+                    a->initialized = true;
             }
-            else
+            
+            // TODO: Make this into a loop so multiple actions can start per frame.
+            if(!bossIsActionBlocking(b))
                 bossNextAction(b);
             
             if(b->health <= 0)
