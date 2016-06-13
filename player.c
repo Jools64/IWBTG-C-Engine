@@ -17,7 +17,7 @@ void playerInit(Player* p, float x, float y, Iwbtg* iw)
     int jump[] = {10, 11};
     int fall[] = {12, 13};
     int slide[] = {14, 15};
-    spriteAddAnimation(&p->sprite, Animations_stand, &stand[0], 4, 6);
+    spriteAddAnimation(&p->sprite, Animations_stand, &stand[0], 4, 8);
     spriteAddAnimation(&p->sprite, Animations_run, &run[0], 4, 16);
     spriteAddAnimation(&p->sprite, Animations_jump, &jump[0], 2, 12);
     spriteAddAnimation(&p->sprite, Animations_fall, &fall[0], 2, 12);

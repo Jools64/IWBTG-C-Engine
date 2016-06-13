@@ -226,7 +226,7 @@ void controllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt)
                             a->initialized = true;
                         }
                         
-                        e->position = vector2fLerp(a->move.start, a->move.destination, clamp(b->actionTime / a->move.time, 0, 1));
+                        e->position = vector2fLerp(a->move.start, a->move.destination, inOutEase(clamp(b->actionTime / a->move.time, 0, 1)));
                         
                         if(b->actionTime >= a->move.time)
                             bossNextAction(b);
@@ -257,6 +257,7 @@ void controllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt)
             {
                 if(iw->level.boss == e)
                     iw->level.boss = 0;
+                createEntity(iw, EntityType_warp, 480 - 64, 270 - 64);
                 destroyEntity(e);
             }
             

@@ -1,3 +1,11 @@
+float inOutEase(float t)
+{
+    t *= 2;
+    if (t < 1) return 0.5f * t * t;
+    t--;
+    return -0.5f * (t * (t - 2) - 1);
+}
+
 int loopi(int value, int min, int max)
 {
     int delta = max - min;
