@@ -72,6 +72,7 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
             
         case EntityType_save:
             spriteInit(&e->sprite, assetsGetTexture(&iw->game, "save"), 32, 32);
+            e->animationTimer = 0.05f;
             break;
             
         case EntityType_warp:
@@ -104,10 +105,11 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
             spriteInit(&e->sprite, assetsGetTexture(&iw->game, "boss"), 128, 128);
             e->controller->type = ControllerType_boss;
             e->position.x = x - 64 + 16;
-            e->position.y = y - 64 + 16;
-            e->controller->boss.health = e->controller->boss.maxHealth = 50;
+            e->position.y = - 128;//- 64 + 16;
+            e->controller->boss.health = e->controller->boss.maxHealth = 30;
             e->controller->boss.actionQueueHead = e->controller->boss.actionQueueTail = 0;
             e->controller->boss.initialized = false;
+            e->controller->boss.triggered = false;
             for(int i = 0; i < MAX_ACTIONS_PER_BOSS; ++i)
             {
                 e->controller->boss.activeActions[i] = 0;
@@ -174,11 +176,15 @@ void destroyAllEntities(Iwbtg* iw)
 }
 
 // TODO: Remove this temporary code
-void addFirstBossActions(Entity* e)
+void addFirstBossActions(Entity* e, Iwbtg* iw)
 {
     BossAction* a;
     
     // Burst bullets and stuff
+    a = bossAddAction(e, BossActionType_move);
+    a->move.destination = v2f(480 - 64, 128);
+    a = bossAddAction(e, BossActionType_playMusic);
+    a->playMusic.music = assetsGetMusic(&iw->game, "appleBossMusic");
     a = bossAddAction(e, BossActionType_wait);
     a->wait.time = 0.2;
     a = bossAddAction(e, BossActionType_move);
@@ -252,6 +258,12 @@ void entityUpdate(Entity* e, Iwbtg* iw, float dt)
                 {
                     soundPlay(assetsGetSound(&iw->game, "saved"), 1);
                     saveGame(iw, true);
+                    
+                    if(iw->level.boss)
+                    {
+                        destroyEntity(e);
+                        iw->level.boss->controller->boss.triggered = true;
+                    }
                 }
                 e->sprite.frame = 1;
                 e->animationTimer = 0.5;
@@ -328,7 +340,7 @@ void entityUpdate(Entity* e, Iwbtg* iw, float dt)
         
         case EntityType_boss: {
             if(bossIsActionQueueEmpty(&e->controller->boss))
-                addFirstBossActions(e);
+                addFirstBossActions(e, iw);
         } break;
         
         default:
@@ -458,6 +470,11 @@ void entityDraw(Entity* e, Iwbtg* iw)
                 spriteDraw(g, s, e->position.x, e->position.y + 16);
                 s->frame = br;
                 spriteDraw(g, s, e->position.x + 16, e->position.y + 16);
+            } break;
+              
+            case EntityType_boss: {
+                if(e->controller->boss.triggered)
+                    spriteDraw(g, &e->sprite, e->position.x, e->position.y);
             } break;
               
             default:

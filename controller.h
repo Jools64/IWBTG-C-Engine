@@ -36,7 +36,8 @@ typedef enum BossActionType
 {
     BossActionType_wait,
     BossActionType_move,
-    BossActionType_projectileBurst
+    BossActionType_projectileBurst,
+    BossActionType_playMusic
 } BossActionType;
 
 typedef struct BossActionWait
@@ -57,6 +58,11 @@ typedef struct BossActionProjectileBurst
     int projectileEntityType;
 } BossActionProjectileBurst;
 
+typedef struct BossActionPlayMusic
+{
+    Music* music;
+} BossActionPlayMusic;
+
 typedef struct BossAction
 {
     BossActionType type;
@@ -67,6 +73,7 @@ typedef struct BossAction
         BossActionWait wait;
         BossActionMove move;
         BossActionProjectileBurst projectileBurst;
+        BossActionPlayMusic playMusic;
     };
 } BossAction;
 
@@ -76,7 +83,7 @@ typedef struct BossAction
 typedef struct ControllerBoss
 {
     int maxHealth, health;
-    bool initialized;
+    bool initialized, triggered;
     BossAction actionQueue[MAX_ACTIONS_PER_BOSS];
     BossAction* activeActions[MAX_ACTIONS_PER_BOSS];
     int actionQueueHead, actionQueueTail;

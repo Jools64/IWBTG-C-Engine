@@ -19,10 +19,10 @@ void musicPlay(Music* music, float volume, Game* g)
             Mix_HaltMusic();
         }
         g->playing = music;
-        //Mix_PlayMusic(music->data, -1);
+        Mix_PlayMusic(music->data, -1);
         
         Mix_VolumeMusic((int)(volume * 128));
-        Mix_FadeInMusic(music->data, -1,  500);
+        //Mix_FadeInMusic(music->data, -1,  500);
         
         
     #endif
@@ -42,10 +42,10 @@ void musicPlayOnce(Music* music, float volume, Game* g)
             Mix_HaltMusic();
         }
         g->playing = music;
-        //Mix_PlayMusic(music->data, -1);
+        Mix_PlayMusic(music->data, 0);
         
         Mix_VolumeMusic((int)(volume * 128));
-        Mix_FadeInMusic(music->data, 0,  500);
+        //Mix_FadeInMusic(music->data, 0,  500);
         
         
     #endif

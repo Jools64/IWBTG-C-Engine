@@ -1,4 +1,10 @@
-// TODO: Stop being so lazy and further break up this into headers and c source files.
+/*
+
+    TODO:
+    
+    - Restart music at correct position after game over
+
+*/
 
 #define NO_MUSIC
 
@@ -216,6 +222,8 @@ Entity* createParticle(Iwbtg* iw, Texture* texture, float x, float y,
 
 void loadMap(Iwbtg* iw, char* file)
 {
+    iw->level.boss = 0;
+    
     FILE* f;
     if((f = fopen(file, "rb")))
     {
@@ -474,6 +482,9 @@ void iwbtgLoad(Iwbtg* iw)
     
     assetsLoadMusic(g, "assets/forest_music.ogg", "forestMusic");
     assetsLoadMusic(g, "assets/menu_music.ogg", "menuMusic");
+    assetsLoadMusic(g, "assets/apple_boss.ogg", "appleBossMusic");
+    assetsLoadMusic(g, "assets/boss_defeated.ogg", "bossDefeatedMusic");
+    assetsLoadMusic(g, "assets/game_over.ogg", "gameOverMusic");
 }
 
 void iwbtgUpdate(Iwbtg* iw)
@@ -528,7 +539,7 @@ void iwbtgUpdate(Iwbtg* iw)
             iw->state = GameState_menu;
             iw->activeMenu = &iw->mainMenu;
             musicStop(&iw->game);
-            musicPlayOnce(assetsGetMusic(&iw->game, "menuMusic"), 0.5, &iw->game);
+            musicPlayOnce(assetsGetMusic(&iw->game, "menuMusic"), 1.0, &iw->game);
         }
         
         iw->entityDrawCount = 0;
@@ -623,7 +634,7 @@ void iwbtgDraw(Iwbtg* iw)
         }
         else
         {
-            if(iw->level.boss)
+            if(iw->level.boss && iw->level.boss->controller->boss.triggered)
             {
                 ControllerBoss* bc = &iw->level.boss->controller->boss;
                 

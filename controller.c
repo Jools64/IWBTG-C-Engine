@@ -244,96 +244,106 @@ void controllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt)
             
             ControllerBoss* b = &c->boss;
             
-            if(!b->initialized)
+            if(b->triggered)
             {
-                b->initialized = true;
-                
-                // Take the first action in the queue
-                if(!bossIsActionQueueEmpty(b))
+                if(!b->initialized)
                 {
-                    b->actionQueue[0].initialized = false;
-                    bossAddActiveAction(b, &b->actionQueue[0]);
+                    b->initialized = true;
+                    
+                    // Take the first action in the queue
+                    if(!bossIsActionQueueEmpty(b))
+                    {
+                        b->actionQueue[0].initialized = false;
+                        bossAddActiveAction(b, &b->actionQueue[0]);
+                    }
                 }
-            }
 
-            for(int i = 0; i < MAX_ACTIONS_PER_BOSS; ++i)
-            {
-                BossAction* a = b->activeActions[i];
-                if(a == 0)
-                    continue;
-                
-                a->time += dt;
-                
-                switch(a->type)
+                for(int i = 0; i < MAX_ACTIONS_PER_BOSS; ++i)
                 {
-                    case BossActionType_wait:
-                        if(a->time > a->wait.time)
-                            bossRemoveActiveAction(b, a);
-                        break;
-                        
-                    case BossActionType_move:
-                        if(!a->initialized)
-                        {
-                            a->move.start = e->position;
-                            a->initialized = true;
-                        }
-                        
-                        e->position = vector2fLerp(a->move.start, a->move.destination, inOutEase(clamp(a->time / a->move.time, 0, 1)));
-                        
-                        if(a->time >= a->move.time)
-                            bossRemoveActiveAction(b, a);
-                        break;
-                        
-                    case BossActionType_projectileBurst: {
-                        
-                        BossActionProjectileBurst* pb = &a->projectileBurst;
-                        
-                        if(!a->initialized)
-                            pb->shotTimer = 0;
-                        
-                        pb->shotTimer += dt;
-                        
-                        // TODO: do something a little smarter here so that
-                        //       if two shots occur on the same frame, their positions
-                        //       are correctly seperated from each other.
-                        while(pb->shotTimer > pb->interval)
-                        {
-                            for(int i = 0; i < pb->count; ++i)
+                    BossAction* a = b->activeActions[i];
+                    if(a == 0)
+                        continue;
+                    
+                    a->time += dt;
+                    
+                    switch(a->type)
+                    {
+                        case BossActionType_wait:
+                            if(a->time > a->wait.time)
+                                bossRemoveActiveAction(b, a);
+                            break;
+                            
+                        case BossActionType_move:
+                            if(!a->initialized)
                             {
-                                Entity* p = createEntity(iw, pb->projectileEntityType, 
-                                    e->position.x + (e->sprite.size.x / 2), e->position.y + (e->sprite.size.y / 2));
-                                p->position.x -= (p->sprite.size.x / 2);
-                                p->position.y -= (p->sprite.size.y / 2);
-                                p->velocity = speedDirectionToVector2f(pb->speed, pb->direction + ((360 / pb->count) * i));
-                                
+                                a->move.start = e->position;
+                                a->initialized = true;
                             }
                             
-                            pb->direction += pb->rotation;
-                            pb->shotTimer -= pb->interval;
-                        }
-                        
-                        if(a->time > pb->interval * pb->repeat)
+                            e->position = vector2fLerp(a->move.start, a->move.destination, inOutEase(clamp(a->time / a->move.time, 0, 1)));
+                            
+                            if(a->time >= a->move.time)
+                                bossRemoveActiveAction(b, a);
+                            break;
+                            
+                        case BossActionType_projectileBurst: {
+                            
+                            BossActionProjectileBurst* pb = &a->projectileBurst;
+                            
+                            if(!a->initialized)
+                                pb->shotTimer = 0;
+                            
+                            pb->shotTimer += dt;
+                            
+                            // TODO: do something a little smarter here so that
+                            //       if two shots occur on the same frame, their positions
+                            //       are correctly seperated from each other.
+                            while(pb->shotTimer > pb->interval)
+                            {
+                                for(int i = 0; i < pb->count; ++i)
+                                {
+                                    Entity* p = createEntity(iw, pb->projectileEntityType, 
+                                        e->position.x + (e->sprite.size.x / 2), e->position.y + (e->sprite.size.y / 2));
+                                    p->position.x -= (p->sprite.size.x / 2);
+                                    p->position.y -= (p->sprite.size.y / 2);
+                                    p->velocity = speedDirectionToVector2f(pb->speed, pb->direction + ((360 / pb->count) * i));
+                                    
+                                }
+                                
+                                pb->direction += pb->rotation;
+                                pb->shotTimer -= pb->interval;
+                            }
+                            
+                            if(a->time > pb->interval * pb->repeat)
+                                bossRemoveActiveAction(b, a);
+                        } break;
+                            
+                        case BossActionType_playMusic:
+                            musicPlay(a->playMusic.music, 0.7, &iw->game);
                             bossRemoveActiveAction(b, a);
-                    } break;
-                        
-                    default:
-                        break;
+                            break;
+                           
+                        default:
+                            break;
+                    }
+                    
+                    if(!a->initialized)
+                        a->initialized = true;
+                    
                 }
                 
-                if(!a->initialized)
-                    a->initialized = true;
-            }
-            
-            // TODO: Make this into a loop so multiple actions can start per frame.
-            if(!bossIsActionBlocking(b))
-                bossNextAction(b);
-            
-            if(b->health <= 0)
-            {
-                if(iw->level.boss == e)
-                    iw->level.boss = 0;
-                createEntity(iw, EntityType_warp, 480 - 64, 270 - 64);
-                destroyEntity(e);
+                // TODO: Make this into a loop so multiple actions can start per frame.
+                if(!bossIsActionBlocking(b) && iw->state != GameState_gameOver)
+                    bossNextAction(b);
+                
+                if(b->health <= 0)
+                {
+                    if(iw->level.boss == e)
+                        iw->level.boss = 0;
+                    createEntity(iw, EntityType_warp, 480 - 64, 270 - 64);
+                    musicPlayOnce(assetsGetMusic(&iw->game, "bossDefeatedMusic"), 0.7, &iw->game);
+                    destroyEntity(e);
+                }
             }
             
         } break;

@@ -47,7 +47,9 @@ void playerUpdate(Player* p, Iwbtg* iw)
 		float ty = p->position.y;
 		p->position.y = floor(p->position.y) - 0.01;
 		
-        if(playerCheckCollision(p, iw, EntityType_spike) || playerCheckCollision(p, iw, EntityType_fruit) || playerCheckCollision(p, iw, EntityType_boss))
+        Entity* bossCollision = playerCheckCollision(p, iw, EntityType_boss);
+        
+        if(playerCheckCollision(p, iw, EntityType_spike) || playerCheckCollision(p, iw, EntityType_fruit) || (bossCollision && bossCollision->controller->boss.triggered))
         {
             for(int t = 1; t <= 8; ++t)
                 for(int i = 0; i < 16; ++i)
@@ -62,6 +64,7 @@ void playerUpdate(Player* p, Iwbtg* iw)
                 }
             musicPause(&iw->game);
             soundPlay(assetsGetSound(&iw->game, "death"), 1);
+            musicPlayOnce(assetsGetMusic(&iw->game, "gameOverMusic"), 1, &iw->game);
             
             p->dead = true;
             iw->state = GameState_gameOver;
