@@ -22,6 +22,14 @@ typedef struct Script
     Vector2i position;
 } Script;
 
+typedef struct Background
+{
+    Texture* texture;
+    Vector2f position, speed;
+    bool loopX, loopY, enabled;
+} Background;
+
+#define MAX_BACKGROUNDS_PER_LEVEL 8
 #define MAX_SCRIPTS_PER_LEVEL 32
 typedef struct Level
 {
@@ -31,7 +39,7 @@ typedef struct Level
     Grid controllers;
     Entity* entityMap[MAP_WIDTH][MAP_HEIGHT];
     Entity* boss;
-    
+    Background backgrounds[MAX_BACKGROUNDS_PER_LEVEL];
 } Level;
 
 typedef struct TextInput
@@ -53,8 +61,6 @@ typedef struct Iwbtg
     SaveState saveState;
     
     Texture* blockTexture;
-    Texture* backgroundTexture;
-    Texture* cloudsTexture;
     Texture* gameOverTexture;
     Texture* titleTexture;
     

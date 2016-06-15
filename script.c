@@ -1,4 +1,4 @@
-#define MAX_VALUE_LENGTH 32
+#define MAX_VALUE_LENGTH 64
 #define MAX_VALUES_PER_SCRIPT 32
 
 typedef enum ScriptValueType
@@ -33,7 +33,8 @@ typedef enum _TokenType // A file included in SDL_opengl.h also defines a TokenT
     TokenType_identifier,
     TokenType_number,
     TokenType_assignment,
-    TokenType_endOfFile
+    TokenType_endOfFile,
+    TokenType_string
 } _TokenType;
 
 #define MAX_TOKEN_LENGTH MAX_VALUE_LENGTH
@@ -48,6 +49,22 @@ double scriptReadNumber(ScriptState* ss, char* name, double defaultValue)
     for(int i = 0; i < ss->valueCount; ++i)
         if(ss->values[i].type == ScriptValueType_number && strcmp(ss->values[i].key, name) == 0)
             return ss->values[i].number;
+    return defaultValue;
+}
+
+bool scriptHasValue(ScriptState* ss, char* name)
+{
+    for(int i = 0; i < ss->valueCount; ++i)
+        if(strcmp(ss->values[i].key, name) == 0)
+            return true;
+    return false;
+}
+
+char* scriptReadString(ScriptState* ss, char* name, char* defaultValue)
+{
+    for(int i = 0; i < ss->valueCount; ++i)
+        if(ss->values[i].type == ScriptValueType_string && strcmp(ss->values[i].key, name) == 0)
+            return &ss->values[i].string[0];
     return defaultValue;
 }
 
@@ -135,6 +152,11 @@ bool getNextToken(ScriptState* s, Token* t)
                 {
                     readState = 4;
                 }
+                else if(c == '"')
+                {
+                    valueStart = charPointer+1;
+                    readState = 5;
+                }
                 else if(c == EOFC)
                 {
                     t->type = TokenType_endOfFile;
@@ -199,6 +221,17 @@ bool getNextToken(ScriptState* s, Token* t)
                 return true;
                 break;
                 
+            case 5: // String
+                if(c == '"')
+                {
+                    valueLength--;
+                    t->type = TokenType_string;
+                    readState = 100;
+                }
+                else
+                    valueLength++;
+                break;
+                
             case 100: // Copy value
                 strncpy(t->value, valueStart, 
                             min(valueLength+1, MAX_TOKEN_LENGTH));
@@ -242,6 +275,16 @@ ScriptState parseScript(char* s)
                         sv->type = ScriptValueType_number;
                         sv->number = atof(token.value);
                     }
+                    else if(token.type == TokenType_string)
+                    {
+                        sv->type = ScriptValueType_string;
+                        // TODO: Could probably write the string length into the
+                        //       token as an optimization.
+                        int valueLength = strlen(token.value);
+                        strncpy(sv->string, token.value, 
+                            min(valueLength+1, MAX_VALUE_LENGTH));
+                        sv->string[min(valueLength+1, MAX_VALUE_LENGTH)] = '\0';
+                    }
                 }
             }
             else
@@ -253,5 +296,13 @@ ScriptState parseScript(char* s)
         getNextToken(&state, &token);
     }
     
+    return state;
+}
+
+ScriptState loadAndParseScript(char* fileName)
+{
+    char* source = loadText(fileName);
+    ScriptState state = parseScript(source);
+    free(source);
     return state;
 }

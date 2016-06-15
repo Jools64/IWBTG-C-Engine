@@ -288,6 +288,25 @@ void loadMap(Iwbtg* iw, char* file)
             if(e && e->controller->type == ControllerType_chain)
                 resolveChain(e, iw);
         }
+        
+    for(int i = 0; i < MAX_BACKGROUNDS_PER_LEVEL; ++i)
+        iw->level.backgrounds[i].enabled = false;
+    
+    ScriptState roomInfoScript = loadAndParseScript("assets/stage1.rm");
+    char buffer[128];
+    for(int i = 0; i < MAX_BACKGROUNDS_PER_LEVEL; ++i)
+    {
+        snprintf(buffer, 128, "background%d", i);
+        if(scriptHasValue(&roomInfoScript, buffer))
+        {
+            iw->level.backgrounds[i].texture = assetsGetTexture(&iw->game, scriptReadString(&roomInfoScript, buffer, "background name missing!?"));
+            iw->level.backgrounds[i].enabled = true;
+            
+            snprintf(buffer, 128, "background%dhSpeed", i);
+            iw->level.backgrounds[i].speed.x = (float)scriptReadNumber(&roomInfoScript, buffer, 0);snprintf(buffer, 128, "background%dvSpeed", i);
+            iw->level.backgrounds[i].speed.y = (float)scriptReadNumber(&roomInfoScript, buffer, 0);
+        }
+    }    
 }
 
 void saveMap(Iwbtg* iw, char* file)
@@ -394,8 +413,6 @@ void iwbtgInit(Iwbtg* iw)
     editorInit(iw);
     
     iw->blockTexture = assetsGetTexture(&iw->game, "block");
-    iw->backgroundTexture = assetsGetTexture(&iw->game, "background");
-    iw->cloudsTexture = assetsGetTexture(&iw->game, "clouds");
     iw->titleTexture = assetsGetTexture(&iw->game, "title");
     
     MenuItem* mi;
@@ -452,8 +469,6 @@ void iwbtgLoad(Iwbtg* iw)
     Game* g = &iw->game;
     assetsLoadTexture(g, "assets/kid.png", "kid"); //kid_silhouette
     assetsLoadTexture(g, "assets/block.png", "block");
-    assetsLoadTexture(g, "assets/background.png", "background");
-    assetsLoadTexture(g, "assets/clouds.png", "clouds");
     assetsLoadTexture(g, "assets/objects.png", "objects");
     assetsLoadTexture(g, "assets/spike.png", "spike");
     assetsLoadTexture(g, "assets/save.png", "save");
@@ -465,13 +480,15 @@ void iwbtgLoad(Iwbtg* iw)
     assetsLoadTexture(g, "assets/font.png", "font");
     assetsLoadTexture(g, "assets/title.png", "title");
     assetsLoadTexture(g, "assets/fruit.png", "fruit");
-    assetsLoadTexture(g, "assets/landscape.png", "landscape");
     assetsLoadTexture(g, "assets/controllers.png", "controllers");
     assetsLoadTexture(g, "assets/moving_platform.png", "movingPlatform");
     assetsLoadTexture(g, "assets/font_small.png", "fontSmall");
     assetsLoadTexture(g, "assets/gl_test.png", "glTest");
     assetsLoadTexture(g, "assets/boss1.png", "boss");
     assetsLoadTexture(g, "assets/boss_health_bar.png", "bossHealthBar");
+    assetsLoadTexture(g, "assets/stage1_back1.png", "stage1Back1");
+    assetsLoadTexture(g, "assets/stage1_back2.png", "stage1Back2");
+    assetsLoadTexture(g, "assets/stage1_back3.png", "stage1Back3");
     
     assetsLoadSound(g, "assets/jump.wav", "jump");
     assetsLoadSound(g, "assets/double_jump.wav", "doubleJump");
@@ -479,6 +496,8 @@ void iwbtgLoad(Iwbtg* iw)
     assetsLoadSound(g, "assets/death.wav", "death");
     assetsLoadSound(g, "assets/save.wav", "saved");
     assetsLoadSound(g, "assets/trap.wav", "trap");
+    assetsLoadSound(g, "assets/boss_hit.wav", "bossHit");
+    assetsLoadSound(g, "assets/boss_shoot.wav", "bossShoot");
     
     assetsLoadMusic(g, "assets/forest_music.ogg", "forestMusic");
     assetsLoadMusic(g, "assets/menu_music.ogg", "menuMusic");
@@ -517,11 +536,6 @@ void iwbtgUpdate(Iwbtg* iw)
             iw->gameOverTimer += dt;
         }
         
-        if(!iw->editor.enabled)
-            playerUpdate(&iw->player, iw);
-        
-        editorUpdate(iw);
-        
         if(checkKeyPressed(g, KEY_SAVE_LEVEL))
         {
             char buffer[128];
@@ -534,13 +548,18 @@ void iwbtgUpdate(Iwbtg* iw)
             loadMap(iw, getCurrentMapName(iw, buffer, 128));
         }
         
-        if(checkKeyPressed(g, KEY_MENU))
+        if(checkKeyPressed(g, KEY_MENU) && !iw->editor.enabled)
         {
             iw->state = GameState_menu;
             iw->activeMenu = &iw->mainMenu;
             musicStop(&iw->game);
             musicPlayOnce(assetsGetMusic(&iw->game, "menuMusic"), 1.0, &iw->game);
         }
+        
+        if(!iw->editor.enabled)
+            playerUpdate(&iw->player, iw);
+        
+        editorUpdate(iw);
         
         iw->entityDrawCount = 0;
         if(!iw->editor.enabled)
@@ -572,13 +591,24 @@ void iwbtgDraw(Iwbtg* iw)
     Game* g = &iw->game;
     renderBegin(g);
     
-    textureDraw(g, iw->backgroundTexture, 0, 0);
+    for(int i = 0; i < MAX_BACKGROUNDS_PER_LEVEL; ++i)
+    {
+        Background* b = &iw->level.backgrounds[i];
+        if(b->enabled)
+        {
+            int offsetX = (int)(iw->time * b->speed.x) % b->texture->size.x;
+            int offsetY = (int)(iw->time * b->speed.y) % b->texture->size.y;
+            textureDraw(g, b->texture, 
+                        b->position.x + offsetX, 
+                        b->position.y + offsetY);
+            // TODO: Remove this hack and implement looping properly
+            if(b->speed.x > 0)
+                textureDraw(g, b->texture, 
+                            b->position.x + offsetX - b->texture->size.x, 
+                            b->position.y + offsetY);
+        }
+    }
     
-    int offset = (int)(iw->time * 15) % iw->cloudsTexture->size.x;
-    textureDraw(g, iw->cloudsTexture, offset, 0);
-    textureDraw(g, iw->cloudsTexture, offset - iw->cloudsTexture->size.x, 0);
-    
-    textureDraw(g, assetsGetTexture(&iw->game, "landscape"), 0, 0);
     
     if(iw->state == GameState_menu)
     {

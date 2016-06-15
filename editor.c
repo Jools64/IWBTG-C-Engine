@@ -78,9 +78,13 @@ void editorUpdate(Iwbtg* iw)
         }
     }
     
-    if(checkKeyPressed(g, KEY_EDITOR_TOGGLE))
+    if(checkKeyPressed(g, KEY_EDITOR_TOGGLE) || checkKeyPressed(g, KEY_MENU))
     {
-        iw->editor.enabled = !iw->editor.enabled;
+        if(checkKeyPressed(g, KEY_EDITOR_TOGGLE))
+            iw->editor.enabled = !iw->editor.enabled;
+        else
+            iw->editor.enabled = false;
+        
         if(!iw->editor.enabled)
         {
             char buffer[128];

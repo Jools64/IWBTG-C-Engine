@@ -29,65 +29,11 @@ typedef struct ControllerInOut
     float direction;
     float interval;
     float timer;
+    bool ease;
     Vector2f basePosition;
 } ControllerInOut;
 
-typedef enum BossActionType
-{
-    BossActionType_wait,
-    BossActionType_move,
-    BossActionType_projectileBurst,
-    BossActionType_playMusic
-} BossActionType;
-
-typedef struct BossActionWait
-{
-    float time;
-} BossActionWait;
-
-typedef struct BossActionMove
-{
-    float time;
-    Vector2f destination, start;
-} BossActionMove;
-
-typedef struct BossActionProjectileBurst
-{
-    int count, repeat;
-    float speed, interval, direction, rotation, shotTimer;
-    int projectileEntityType;
-} BossActionProjectileBurst;
-
-typedef struct BossActionPlayMusic
-{
-    Music* music;
-} BossActionPlayMusic;
-
-typedef struct BossAction
-{
-    BossActionType type;
-    float time;
-    bool active, initialized, parallel;
-    union
-    {
-        BossActionWait wait;
-        BossActionMove move;
-        BossActionProjectileBurst projectileBurst;
-        BossActionPlayMusic playMusic;
-    };
-} BossAction;
-
-// TODO: Boss controller should be moved out of controller system as
-//       the data structure is quite large.
-#define MAX_ACTIONS_PER_BOSS 32
-typedef struct ControllerBoss
-{
-    int maxHealth, health;
-    bool initialized, triggered;
-    BossAction actionQueue[MAX_ACTIONS_PER_BOSS];
-    BossAction* activeActions[MAX_ACTIONS_PER_BOSS];
-    int actionQueueHead, actionQueueTail;
-} ControllerBoss;
+#include "boss.h"
 
 typedef struct Controller Controller;
 typedef struct Controller
@@ -101,10 +47,6 @@ typedef struct Controller
     };
     unsigned char hasChains;
 } Controller;
-
-int bossGetNextActionIndex(int currentAction);
-bool bossIsActionQueueFull(ControllerBoss* b);
-BossAction* bossAddAction(Entity* e, BossActionType type);
 
 void entitySetControllerFromTypeIndex(Entity* e, int typeIndex, Iwbtg* iw);
 void controllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt);

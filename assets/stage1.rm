@@ -1,0 +1,8 @@
+background1 = "stage1Back1"
+
+background2 = "stage1Back2"
+background2hSpeed = 15
+
+background3 = "stage1Back3"
+
+music = "stage2Music"

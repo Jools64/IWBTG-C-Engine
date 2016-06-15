@@ -175,57 +175,6 @@ void destroyAllEntities(Iwbtg* iw)
         iw->entities[i].active = false;
 }
 
-// TODO: Remove this temporary code
-void addFirstBossActions(Entity* e, Iwbtg* iw)
-{
-    BossAction* a;
-    
-    // Burst bullets and stuff
-    a = bossAddAction(e, BossActionType_move);
-    a->move.destination = v2f(480 - 64, 128);
-    a = bossAddAction(e, BossActionType_playMusic);
-    a->playMusic.music = assetsGetMusic(&iw->game, "appleBossMusic");
-    a = bossAddAction(e, BossActionType_wait);
-    a->wait.time = 0.2;
-    a = bossAddAction(e, BossActionType_move);
-    a->move.destination = v2f(128, 128);
-    a->move.time = 1;
-    a = bossAddAction(e, BossActionType_projectileBurst);
-    a = bossAddAction(e, BossActionType_move);
-    a->move.destination = v2f(960 - 128 - 128, 128);
-    a = bossAddAction(e, BossActionType_projectileBurst);
-    a = bossAddAction(e, BossActionType_move);
-    a->move.destination = v2f(480 - 64, 128);
-    a->move.time = 1;
-    a = bossAddAction(e, BossActionType_projectileBurst);
-    a = bossAddAction(e, BossActionType_move);
-    a->move.destination = v2f(480 - 64, 320);
-    a->move.time = 1;
-    a = bossAddAction(e, BossActionType_projectileBurst);
-    a = bossAddAction(e, BossActionType_move);
-    a->move.destination = v2f(480 - 64, 128);
-    a = bossAddAction(e, BossActionType_projectileBurst);
-    a = bossAddAction(e, BossActionType_wait);
-    a->wait.time = 2;
-    
-    // Fly around the edges of the screen
-    a = bossAddAction(e, BossActionType_move);
-    a->move.destination = v2f(480 - 64, 64);
-    a->move.time = 0.2;
-    a = bossAddAction(e, BossActionType_move);
-    a->move.destination = v2f(960 - 128 - 64, 64);
-    a->move.time = 1.0;
-    a = bossAddAction(e, BossActionType_move);
-    a->move.destination = v2f(960 - 128  - 64, 540 - 128);
-    a->move.time = 1.0;
-    a = bossAddAction(e, BossActionType_move);
-    a->move.destination = v2f(64, 540 - 128);
-    a->move.time = 1.0;
-    a = bossAddAction(e, BossActionType_move);
-    a->move.destination = v2f(64, 0);
-    a->move.time = 1.0;
-}
-
 void entityUpdate(Entity* e, Iwbtg* iw, float dt)
 {
     spriteUpdate(&e->sprite, 1.0f / 50.0f);
@@ -303,6 +252,7 @@ void entityUpdate(Entity* e, Iwbtg* iw, float dt)
             {
                 other->controller->boss.health--;
                 destroyEntity(e);
+                soundPlay(assetsGetSound(&iw->game, "bossHit"), 0.7);
             }
             
             break;

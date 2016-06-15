@@ -82,29 +82,6 @@
         
         return true;
     }
-    
-    char* loadText(char* filename)
-    {
-        char* text = 0;
-        long length;
-        FILE* file = fopen(filename, "rb");
-
-        if(file)
-        {
-            fseek(file, 0, SEEK_END);
-            length = ftell(file);
-            fseek(file, 0, SEEK_SET);
-
-            text = malloc(length + 1);
-            if (text)
-                fread(text, 1, length, file);
-            text[length] = '\0';
-            
-            fclose(file);
-        }
-        
-        return text;
-    }
 
     bool initGl(Game* g)
     {
@@ -247,6 +224,8 @@ bool gameInit(Game* g, char* title, int width, int height, float scale)
     g->running = true;
     
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0"); // Nearest Neighbor
+    
+    srand(time(0));
     
     printf("Game initialized\n");
     return true;

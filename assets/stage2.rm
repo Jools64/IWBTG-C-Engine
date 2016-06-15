@@ -1,0 +1,4 @@
+background1 = "stage1Back1"
+background1hSpeed = 1
+background1vSpeed = 0
+music = "stage2Music"

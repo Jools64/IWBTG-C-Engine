@@ -1,3 +1,37 @@
+float randomf()
+{
+    int random = rand();
+    return (float)random / (float)RAND_MAX;
+}
+
+float randomfBetween(float min, float max)
+{
+    return (randomf() * (max-min)) + min;
+}
+
+char* loadText(char* filename)
+{
+    char* text = 0;
+    long length;
+    FILE* file = fopen(filename, "rb");
+
+    if(file)
+    {
+        fseek(file, 0, SEEK_END);
+        length = ftell(file);
+        fseek(file, 0, SEEK_SET);
+
+        text = malloc(length + 1);
+        if (text)
+            fread(text, 1, length, file);
+        text[length] = '\0';
+        
+        fclose(file);
+    }
+    
+    return text;
+}
+
 float inOutEase(float t)
 {
     t *= 2;
@@ -122,6 +156,14 @@ float vector2fDistance(Vector2f a, Vector2f b)
     float dy = b.y - a.y;
     
     return sqrtf((dx * dx) + (dy * dy));
+}
+
+float vector2fDirection(Vector2f a, Vector2f b)
+{
+    float dx = b.x - a.x;
+    float dy = b.y - a.y;
+    
+    return atan2f(dy, dx);
 }
 
 float vector2fNormalizedDotProduct(Vector2f a, Vector2f b)
