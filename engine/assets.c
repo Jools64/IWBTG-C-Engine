@@ -119,45 +119,54 @@ Asset* assetsGetAsset(Game* g, char* name)
 Texture* assetsGetTexture(Game* g, char* name)
 {
     Asset* a = assetsGetAsset(g, name);
-    if(a->type == AssetType_texture)
-        return &a->texture;
-    else
+    if(a)
     {
-        printf("Error: Asset \"%s\" is not a texture!\n", a->name);
-        return 0;
+        if(a->type == AssetType_texture)
+            return &a->texture;
+        else
+        {
+            printf("Error: Asset \"%s\" is not a texture!\n", a->name);
+            return 0;
+        }
     }
     
-    printf("Error: Asset not found!\n");
+    printf("Error: Asset not found! \"%s\"\n", name);
         return null;
 }
 
 Sound* assetsGetSound(Game* g, char* name)
 {
     Asset* a = assetsGetAsset(g, name);
-    if(a->type == AssetType_sound)
-        return &a->sound;
-    else
+    if(a)
     {
-        printf("Error: Asset \"%s\" is not a sound!\n", a->name);
-        return 0;
+        if(a->type == AssetType_sound)
+            return &a->sound;
+        else
+        {
+            printf("Error: Asset \"%s\" is not a sound!\n", a->name);
+            return 0;
+        }
     }
     
-    printf("Error: Asset not found!\n");
+    printf("Error: Asset not found! \"%s\"\n", name);
         return null;
 }
 
 Music* assetsGetMusic(Game* g, char* name)
 {
     Asset* a = assetsGetAsset(g, name);
-    if(a->type == AssetType_music)
-        return &a->music;
-    else
+    if(a)
     {
-        printf("Error: Asset \"%s\" is not music!\n", a->name);
-        return 0;
+        if(a->type == AssetType_music)
+            return &a->music;
+        else
+        {
+            printf("Error: Asset \"%s\" is not music!\n", a->name);
+            return 0;
+        }
     }
     
-    printf("Error: Asset not found!\n");
+    printf("Error: Asset not found! \"%s\"\n", name);
         return null;
 }
 

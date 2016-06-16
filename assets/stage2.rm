@@ -1,4 +1,12 @@
-background1 = "stage1Back1"
-background1hSpeed = 1
-background1vSpeed = 0
+background1 = "stage2Back1"
+
+background2 = "stage2Back2"
+background2hSpeed = 30
+
+background3 = "stage2Back3"
+background3hSpeed = 15
+background3vSpeed = 5
+
+blockTexture = "stage2BlockTiles"
+
 music = "stage2Music"

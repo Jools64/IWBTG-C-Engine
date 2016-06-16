@@ -64,6 +64,47 @@ void entitySetControllerFromTypeIndex(Entity* e, int typeIndex, Iwbtg* iw)
             e->velocity.y = scriptReadNumber(&ss, "vspeed", e->velocity.y);
         }
     }
+    else if(typeIndex == 3) // Boo circle
+    {
+        e->controller->type = ControllerType_booCircle;
+        
+        Script* script = levelGetScriptAtPosition(&iw->level, x, y);
+        ControllerBooCircle* bc = &e->controller->booCircle;
+        
+        bc->origin = e->position;
+        
+        bc->speed = 1;
+        bc->distance = 96;
+        bc->count = 8;
+        
+        if(script)
+        {
+            ScriptState ss = parseScript(script->text);
+            bc->speed = scriptReadNumber(&ss, "speed", bc->speed);
+            bc->distance = scriptReadNumber(&ss, "distance", bc->distance);
+            bc->count = scriptReadNumber(&ss, "count", bc->count);
+            bc->timer = scriptReadNumber(&ss, "offset", bc->count);
+        }
+        
+        bc->count = clamp(bc->count, 0, MAX_ENTITIES_PER_BOO_CIRCLE);
+        
+        bc->entities[0] = e;
+        for(int i = 1; i < bc->count; ++i)
+            bc->entities[i] = createEntity(iw, e->type, e->position.x, e->position.y);
+        
+        for(int i = 0; i < bc->count; ++i)
+        {
+            Entity* e = bc->entities[i];
+            e->position = vector2fAdd(bc->origin, 
+                speedDirectionToVector2f(bc->distance, ((float)360 / bc->count) * i));
+        }
+    }
+    else if(typeIndex == 4 || typeIndex == 5) // Vine
+    {
+        Entity* vine = createEntity(iw, EntityType_vine, e->position.x, e->position.y);
+        if(typeIndex == 5)
+            vine->sprite.frame = 1;
+    }
     else if(typeIndex == 63) // Chaining controllers
     {
         e->controller->type = ControllerType_chain;
@@ -154,13 +195,28 @@ void controllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt)
             
         } break;
         
+        case ControllerType_booCircle: {
+            
+            ControllerBooCircle* bc = &e->controller->booCircle;
+
+            bc->timer += bc->speed * dt * 0.1;
+            
+            for(int i = 0; i < bc->count; ++i)
+            {
+                Entity* e = bc->entities[i];
+                e->position = vector2fAdd(bc->origin, 
+                    speedDirectionToVector2f(bc->distance, (((float)360 / bc->count) * i) + (bc->timer * 360)));
+            }
+            
+        } break;
+        
         default:
         
             break;
     }
 }
 
-void addChainLink(Level* l, unsigned char chainLinks[MAP_WIDTH][MAP_HEIGHT], int x, int y, Controller** joinedController)
+void addChainLink(Level* l, unsigned char chainLinks[MAP_WIDTH][MAP_HEIGHT], int x, int y, Controller** joinedController, Iwbtg* iw)
 {
     if(x > 0 && y > 0 && x < MAP_WIDTH && y < MAP_HEIGHT 
        && chainLinks[x][y] == 0)
@@ -170,13 +226,13 @@ void addChainLink(Level* l, unsigned char chainLinks[MAP_WIDTH][MAP_HEIGHT], int
         if(c == 63) // chain link
         {
             chainLinks[x][y] = true;
-            addChainLink(l, chainLinks, x-1, y, joinedController);
-            addChainLink(l, chainLinks, x+1, y, joinedController);
-            addChainLink(l, chainLinks, x, y-1, joinedController);
-            addChainLink(l, chainLinks, x, y+1, joinedController);
+            addChainLink(l, chainLinks, x-1, y, joinedController, iw);
+            addChainLink(l, chainLinks, x+1, y, joinedController, iw);
+            addChainLink(l, chainLinks, x, y-1, joinedController, iw);
+            addChainLink(l, chainLinks, x, y+1, joinedController, iw);
         }
-        else if(c != -1 && l->entityMap[x][y]) // controller is something other than chain link
-            *joinedController = l->entityMap[x][y]->controller;
+        else if(c != -1 && iw->entityMap[x][y]) // controller is something other than chain link
+            *joinedController = iw->entityMap[x][y]->controller;
     }
 }
 
@@ -185,7 +241,7 @@ void resolveChain(Entity* e, Iwbtg* iw)
     unsigned char chainLinks[MAP_WIDTH][MAP_HEIGHT];
     Controller* joinedController = 0;
     memset(chainLinks, 0, MAP_WIDTH * MAP_HEIGHT * sizeof(unsigned char));
-    addChainLink(&iw->level, chainLinks, e->position.x / 32, e->position.y / 32, &joinedController);
+    addChainLink(&iw->level, chainLinks, e->position.x / 32, e->position.y / 32, &joinedController, iw);
     
     if(joinedController != 0)
     {
@@ -195,7 +251,7 @@ void resolveChain(Entity* e, Iwbtg* iw)
             {
                 if(chainLinks[i][t])
                 {
-                    Entity* e = iw->level.entityMap[i][t];
+                    Entity* e = iw->entityMap[i][t];
                     if(e)
                         e->controller = joinedController;
                 }

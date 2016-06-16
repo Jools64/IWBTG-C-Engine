@@ -31,22 +31,23 @@ typedef struct Background
 
 #define MAX_BACKGROUNDS_PER_LEVEL 8
 #define MAX_SCRIPTS_PER_LEVEL 32
+#define MAX_LEVEL_PROPERTIES_SCRIPT_LENGTH 512
 typedef struct Level
 {
+    // This structure represents the contents of a map file.
     Grid entities;
     Grid ground;
     Script scripts[32];
     Grid controllers;
-    Entity* entityMap[MAP_WIDTH][MAP_HEIGHT];
-    Entity* boss;
-    Background backgrounds[MAX_BACKGROUNDS_PER_LEVEL];
+    char propertiesScript[MAX_LEVEL_PROPERTIES_SCRIPT_LENGTH];
+    // TODO: These shouldn't be in here...
 } Level;
 
 typedef struct TextInput
 {
     char* text;
     int textMaxLength;
-    int length, backspaceFrames, cursorPosition;
+    int length, backspaceFrames, leftFrames, rightFrames, cursorPosition;
     bool active;
     Vector2f position;
 } TextInput;
@@ -60,7 +61,6 @@ typedef struct Iwbtg
     //int checkPointRoom;
     SaveState saveState;
     
-    Texture* blockTexture;
     Texture* gameOverTexture;
     Texture* titleTexture;
     
@@ -79,6 +79,11 @@ typedef struct Iwbtg
     int lastEntityPosition, entityDrawCount,
         activeSaveSlot, frameCount;
     Vector2i room;
+    
+    Entity* entityMap[MAP_WIDTH][MAP_HEIGHT];
+    Entity* boss;
+    Background backgrounds[MAX_BACKGROUNDS_PER_LEVEL];
+    Texture* blockTexture;
     
     float time;
     

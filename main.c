@@ -82,6 +82,8 @@ void textInputInit(TextInput* ti)
     ti->position.x = 256;
     ti->position.y = 128;
     ti->backspaceFrames = 0;
+    ti->leftFrames = 0;
+    ti->rightFrames = 0;
     ti->cursorPosition = 0;
 }
 
@@ -125,10 +127,38 @@ void textInputUpdate(TextInput* ti, Iwbtg* iw)
             ti->cursorPosition += inputLength;
         }
            
+        
         if(g->input.keysPressed[SDLK_LEFT & 255])
+        {
             ti->cursorPosition--;
+            ti->leftFrames = 0;
+        }
+        
+        if(g->input.keys[SDLK_LEFT & 255])
+        {
+            ti->leftFrames++;
+            if(ti->leftFrames > 25)
+            {
+                ti->cursorPosition--;
+            }
+        }
+        
         if(g->input.keysPressed[SDLK_RIGHT & 255])
+        {
             ti->cursorPosition++;
+            ti->rightFrames = 0;
+        }
+        
+        if(g->input.keys[SDLK_RIGHT & 255])
+        {
+            ti->rightFrames++;
+            if(ti->rightFrames > 25)
+            {
+                ti->cursorPosition++;
+            }
+        }
+           
+
         ti->cursorPosition = min(max(ti->cursorPosition, 0), strlen(text));
         
         if(g->input.keysPressed[SDLK_BACKSPACE & 255])
@@ -154,7 +184,6 @@ void textInputUpdate(TextInput* ti, Iwbtg* iw)
                     ti->cursorPosition--;
                 }
             }
-            
         }
         
         if(g->input.keysPressed[SDLK_RETURN & 255])
@@ -220,9 +249,43 @@ Entity* createParticle(Iwbtg* iw, Texture* texture, float x, float y,
     return e;
 }
 
+void loadRoomFile(Iwbtg* iw, char* name)
+{
+    char roomFile[255];
+    snprintf(roomFile, 255, "assets/%s.rm", name);
+    
+    ScriptState roomInfoScript = loadAndParseScript(roomFile);
+    
+    if(scriptHasValue(&roomInfoScript, "blockTexture"))
+    {
+        Texture* blockTexture = assetsGetTexture(&iw->game, scriptReadString(&roomInfoScript, "blockTexture", "no block texture"));
+        if(blockTexture)
+            iw->blockTexture = blockTexture;
+    }
+    
+    char buffer[128];
+    for(int i = 0; i < MAX_BACKGROUNDS_PER_LEVEL; ++i)
+    {
+        snprintf(buffer, 128, "background%d", i);
+        if(scriptHasValue(&roomInfoScript, buffer))
+        {
+            iw->backgrounds[i].texture = assetsGetTexture(&iw->game, scriptReadString(&roomInfoScript, buffer, "background name missing!?"));
+            iw->backgrounds[i].enabled = true;
+            
+            snprintf(buffer, 128, "background%dhSpeed", i);
+            iw->backgrounds[i].speed.x = (float)scriptReadNumber(&roomInfoScript, buffer, 0);snprintf(buffer, 128, "background%dvSpeed", i);
+            iw->backgrounds[i].speed.y = (float)scriptReadNumber(&roomInfoScript, buffer, 0);
+        }
+    }
+}
+
 void loadMap(Iwbtg* iw, char* file)
 {
-    iw->level.boss = 0;
+    iw->boss = 0;
+    
+    Background bgClear = {0};
+    for(int i = 0; i < MAX_BACKGROUNDS_PER_LEVEL; ++i)
+        iw->backgrounds[i] = bgClear;
     
     FILE* f;
     if((f = fopen(file, "rb")))
@@ -244,8 +307,10 @@ void loadMap(Iwbtg* iw, char* file)
             fread(&iw->level.scripts[i], sizeof(Script), 1, f);
         }
         
+        fread(&iw->level.propertiesScript[0], MAX_LEVEL_PROPERTIES_SCRIPT_LENGTH, 1, f);
+        
         memset(iw->level.ground.data, 0, sizeof(int) * MAP_WIDTH * MAP_HEIGHT);
-        memset(iw->level.entityMap, 0, sizeof(Entity*) * MAP_WIDTH * MAP_HEIGHT); 
+        memset(iw->entityMap, 0, sizeof(Entity*) * MAP_WIDTH * MAP_HEIGHT); 
         fclose(f);
     }
     else
@@ -253,7 +318,8 @@ void loadMap(Iwbtg* iw, char* file)
         memcpy(iw->level.entities.data, defaultMap, sizeof(int) * MAP_WIDTH * MAP_HEIGHT);
         memset(iw->level.ground.data, 0, sizeof(int) * MAP_WIDTH * MAP_HEIGHT);
         memset(iw->level.controllers.data, 0, sizeof(int) * MAP_WIDTH * MAP_HEIGHT);
-        memset(iw->level.entityMap, 0, sizeof(Entity*) * MAP_WIDTH * MAP_HEIGHT); 
+        memset(iw->entityMap, 0, sizeof(Entity*) * MAP_WIDTH * MAP_HEIGHT); 
+        iw->level.propertiesScript[0] = '\0';
         
         for(int i = 0; i < MAX_SCRIPTS_PER_LEVEL; ++i)
         {
@@ -262,6 +328,17 @@ void loadMap(Iwbtg* iw, char* file)
         }
         iw->editor.enabled = true;
     }
+    
+    for(int i = 0; i < MAX_BACKGROUNDS_PER_LEVEL; ++i)
+        iw->backgrounds[i].enabled = false;
+    
+    ScriptState roomProperties = parseScript(iw->level.propertiesScript);
+    if(scriptHasValue(&roomProperties, "roomtype"))
+    {
+        loadRoomFile(iw, scriptReadString(&roomProperties, "roomtype", "notfound"));
+    }
+    
+    musicPlay(assetsGetMusic(&iw->game, "forestMusic"), 0.7, &iw->game);
     
     destroyAllEntities(iw);
     
@@ -278,35 +355,14 @@ void loadMap(Iwbtg* iw, char* file)
                 entitySetControllerFromTypeIndex(e, typeIndex, iw);
             }
         }
-        
-    musicPlay(assetsGetMusic(&iw->game, "forestMusic"), 0.7, &iw->game);
     
     for(int t = 0; t < iw->level.entities.height; ++t)
         for(int i = 0; i < iw->level.entities.width; ++i)
         {
-            Entity* e = iw->level.entityMap[i][t];
+            Entity* e = iw->entityMap[i][t];
             if(e && e->controller->type == ControllerType_chain)
                 resolveChain(e, iw);
         }
-        
-    for(int i = 0; i < MAX_BACKGROUNDS_PER_LEVEL; ++i)
-        iw->level.backgrounds[i].enabled = false;
-    
-    ScriptState roomInfoScript = loadAndParseScript("assets/stage1.rm");
-    char buffer[128];
-    for(int i = 0; i < MAX_BACKGROUNDS_PER_LEVEL; ++i)
-    {
-        snprintf(buffer, 128, "background%d", i);
-        if(scriptHasValue(&roomInfoScript, buffer))
-        {
-            iw->level.backgrounds[i].texture = assetsGetTexture(&iw->game, scriptReadString(&roomInfoScript, buffer, "background name missing!?"));
-            iw->level.backgrounds[i].enabled = true;
-            
-            snprintf(buffer, 128, "background%dhSpeed", i);
-            iw->level.backgrounds[i].speed.x = (float)scriptReadNumber(&roomInfoScript, buffer, 0);snprintf(buffer, 128, "background%dvSpeed", i);
-            iw->level.backgrounds[i].speed.y = (float)scriptReadNumber(&roomInfoScript, buffer, 0);
-        }
-    }    
 }
 
 void saveMap(Iwbtg* iw, char* file)
@@ -326,6 +382,7 @@ void saveMap(Iwbtg* iw, char* file)
             // TODO: Write only the characters that are actually used.
             fwrite(&iw->level.scripts[i], sizeof(Script), 1, f);
         }
+    fwrite(&iw->level.propertiesScript[0], MAX_LEVEL_PROPERTIES_SCRIPT_LENGTH, 1, f);
     
     fclose(f);
 }
@@ -462,6 +519,8 @@ void iwbtgInit(Iwbtg* iw)
     iw->room = iw->saveState.room = startingRoom;
     
     musicPlayOnce(assetsGetMusic(&iw->game, "menuMusic"), 0.5, &iw->game);
+    
+    iw->blockTexture = assetsGetTexture(&iw->game, "stage1BlockTiles");
 }
 
 void iwbtgLoad(Iwbtg* iw)
@@ -475,7 +534,6 @@ void iwbtgLoad(Iwbtg* iw)
     assetsLoadTexture(g, "assets/player_death_particle.png", "playerDeathParticle");
     assetsLoadTexture(g, "assets/game_over.png", "gameOver");
     assetsLoadTexture(g, "assets/warp.png", "warp");
-    assetsLoadTexture(g, "assets/block_tiles.png", "blockTiles");
     assetsLoadTexture(g, "assets/player_bullet.png", "playerBullet");
     assetsLoadTexture(g, "assets/font.png", "font");
     assetsLoadTexture(g, "assets/title.png", "title");
@@ -486,9 +544,18 @@ void iwbtgLoad(Iwbtg* iw)
     assetsLoadTexture(g, "assets/gl_test.png", "glTest");
     assetsLoadTexture(g, "assets/boss1.png", "boss");
     assetsLoadTexture(g, "assets/boss_health_bar.png", "bossHealthBar");
+    assetsLoadTexture(g, "assets/block_tiles.png", "stage1BlockTiles");
     assetsLoadTexture(g, "assets/stage1_back1.png", "stage1Back1");
     assetsLoadTexture(g, "assets/stage1_back2.png", "stage1Back2");
     assetsLoadTexture(g, "assets/stage1_back3.png", "stage1Back3");
+    assetsLoadTexture(g, "assets/block_tiles2.png", "stage2BlockTiles");
+    assetsLoadTexture(g, "assets/stage2_back1.png", "stage2Back1");
+    assetsLoadTexture(g, "assets/stage2_back2.png", "stage2Back2");
+    assetsLoadTexture(g, "assets/stage2_back3.png", "stage2Back3");
+    assetsLoadTexture(g, "assets/mountains.png", "mountains");
+    assetsLoadTexture(g, "assets/night_sky.png", "nightSky");
+    assetsLoadTexture(g, "assets/tower.png", "tower");
+    assetsLoadTexture(g, "assets/vine.png", "vine");
     
     assetsLoadSound(g, "assets/jump.wav", "jump");
     assetsLoadSound(g, "assets/double_jump.wav", "doubleJump");
@@ -593,7 +660,7 @@ void iwbtgDraw(Iwbtg* iw)
     
     for(int i = 0; i < MAX_BACKGROUNDS_PER_LEVEL; ++i)
     {
-        Background* b = &iw->level.backgrounds[i];
+        Background* b = &iw->backgrounds[i];
         if(b->enabled)
         {
             int offsetX = (int)(iw->time * b->speed.x) % b->texture->size.x;
@@ -606,6 +673,15 @@ void iwbtgDraw(Iwbtg* iw)
                 textureDraw(g, b->texture, 
                             b->position.x + offsetX - b->texture->size.x, 
                             b->position.y + offsetY);
+            if(b->speed.y > 0)
+                textureDraw(g, b->texture, 
+                            b->position.x + offsetX, 
+                            b->position.y + offsetY - b->texture->size.x);
+                            
+            if(b->speed.x > 0 && b->speed.y > 0)
+                textureDraw(g, b->texture, 
+                            b->position.x + offsetX - b->texture->size.x, 
+                            b->position.y + offsetY - b->texture->size.x);
         }
     }
     
@@ -635,11 +711,8 @@ void iwbtgDraw(Iwbtg* iw)
             spriteDraw(g, &iw->player.sprite, iw->player.position.x, iw->player.position.y);
         
         char roomText[128];
-        int mx = iw->game.input.mousePosition.x / 32;
-        int my = iw->game.input.mousePosition.y / 32;
-        snprintf(roomText, 128, "CURRENT ROOM %d,%d\nMOUSE TILE %d,%d", 
-                 iw->room.x, iw->room.y, mx, my);
-        drawText(&iw->game, &iw->fontSmall, roomText, 8, 8);
+        snprintf(roomText, 128, "%03d", 1 - iw->room.y);
+        drawText(&iw->game, 0, roomText, 8, 8);
         
         editorDraw(iw);
         
@@ -664,9 +737,9 @@ void iwbtgDraw(Iwbtg* iw)
         }
         else
         {
-            if(iw->level.boss && iw->level.boss->controller->boss.triggered)
+            if(iw->boss && iw->boss->controller->boss.triggered)
             {
-                ControllerBoss* bc = &iw->level.boss->controller->boss;
+                ControllerBoss* bc = &iw->boss->controller->boss;
                 
                 textureDrawExt(g, assetsGetTexture(g, "bossHealthBar"), 
                             24, 16, 912, 32,
@@ -702,6 +775,8 @@ int main(int argc, char** argv)
     
     iwbtgLoad(iwbtg);
     iwbtgInit(iwbtg);
+    
+    loadRoomFile(iwbtg, "menu");
     
     //loadMap(iwbtg, "assets/1.map");
     

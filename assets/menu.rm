@@ -1,0 +1,11 @@
+background1 = "nightSky"
+background1hSpeed = 15
+
+background2 = "mountains"
+background2hSpeed = 5
+
+background3 = "tower"
+
+blockTexture = "stage2BlockTiles"
+
+music = "stage2Music"

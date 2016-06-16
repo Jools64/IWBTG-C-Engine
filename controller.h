@@ -10,6 +10,7 @@ typedef enum
     ControllerType_bounce,
     ControllerType_chain,
     ControllerType_boss,
+    ControllerType_booCircle
 } ControllerType;
 
 typedef struct ControllerTrap
@@ -33,6 +34,14 @@ typedef struct ControllerInOut
     Vector2f basePosition;
 } ControllerInOut;
 
+#define MAX_ENTITIES_PER_BOO_CIRCLE 16
+typedef struct ControllerBooCircle
+{
+    float speed, distance, count, timer;
+    Entity* entities[MAX_ENTITIES_PER_BOO_CIRCLE];
+    Vector2f origin;
+} ControllerBooCircle;
+
 #include "boss.h"
 
 typedef struct Controller Controller;
@@ -44,6 +53,7 @@ typedef struct Controller
         ControllerTrap trap;
         ControllerInOut inOut;
         ControllerBoss boss;
+        ControllerBooCircle booCircle;
     };
     unsigned char hasChains;
 } Controller;
@@ -51,5 +61,5 @@ typedef struct Controller
 void entitySetControllerFromTypeIndex(Entity* e, int typeIndex, Iwbtg* iw);
 void controllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt);
 void addChainLink(Level* l, unsigned char chainLinks[MAP_WIDTH][MAP_HEIGHT], 
-                  int x, int y, Controller** joinedController);
+                  int x, int y, Controller** joinedController, Iwbtg* iw);
 void resolveChain(Entity* e, Iwbtg* iw);

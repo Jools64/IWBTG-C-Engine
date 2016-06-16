@@ -329,8 +329,8 @@ void bossControllerUpdate(Controller* c, Entity* e, Iwbtg* iw, float dt)
         
         if(b->health <= 0)
         {
-            if(iw->level.boss == e)
-                iw->level.boss = 0;
+            if(iw->boss == e)
+                iw->boss = 0;
             createEntity(iw, EntityType_warp, 480 - 64, 540 - 256);
             musicPlayOnce(assetsGetMusic(&iw->game, "bossDefeatedMusic"), 0.7, &iw->game);
             destroyEntity(e);

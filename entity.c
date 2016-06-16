@@ -60,7 +60,7 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
     switch(type)
     {
         case EntityType_block:
-            spriteInit(&e->sprite, assetsGetTexture(&iw->game, "blockTiles"), 16, 16);
+            spriteInit(&e->sprite, iw->blockTexture, 16, 16);
             e->depth = -1;
 			break;
             
@@ -98,7 +98,7 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
             
         case EntityType_movingPlatform:
             spriteInit(&e->sprite, assetsGetTexture(&iw->game, "movingPlatform"), 32, 16);
-            e->depth = -1;
+            e->depth = 0;
             break;
             
         case EntityType_boss:
@@ -116,6 +116,11 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
                 e->controller->boss.actionQueue[i].active = 0;
             }
             e->depth = -4;
+            break;
+            
+        case EntityType_vine:
+            spriteInit(&e->sprite, assetsGetTexture(&iw->game, "vine"), 32, 32);
+            e->depth = -2;
             break;
             
         default:
@@ -157,9 +162,9 @@ Entity* createEntityFromTypeIndex(Iwbtg* iw, int typeIndex, int x, int y)
     else if(typeIndex == 8)
     {
         e = createEntity(iw, EntityType_boss, x, y);
-        iw->level.boss = e;
+        iw->boss = e;
     }
-    iw->level.entityMap[i][t] = e;
+    iw->entityMap[i][t] = e;
     
     return e;
 }
@@ -208,10 +213,10 @@ void entityUpdate(Entity* e, Iwbtg* iw, float dt)
                     soundPlay(assetsGetSound(&iw->game, "saved"), 1);
                     saveGame(iw, true);
                     
-                    if(iw->level.boss)
+                    if(iw->boss)
                     {
                         destroyEntity(e);
-                        iw->level.boss->controller->boss.triggered = true;
+                        iw->boss->controller->boss.triggered = true;
                     }
                 }
                 e->sprite.frame = 1;

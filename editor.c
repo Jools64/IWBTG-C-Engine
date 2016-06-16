@@ -70,12 +70,16 @@ void editorUpdate(Iwbtg* iw)
             if(e->mode < 0)
                 e->mode = EditorMode_count-1;
         }
+        
         if(checkKeyPressed(&iw->game, KEY_RIGHT))
         {
             e->mode++;
             if(e->mode > EditorMode_count-1)
                 e->mode = 0;
         }
+        
+        if(iw->game.input.keysPressed[SDLK_p & 255] && !iw->textInput.active)
+            textInputEditString(&iw->textInput, &iw->level.propertiesScript[0], MAX_LEVEL_PROPERTIES_SCRIPT_LENGTH);
     }
     
     if(checkKeyPressed(g, KEY_EDITOR_TOGGLE) || checkKeyPressed(g, KEY_MENU))
@@ -155,5 +159,12 @@ void editorDraw(Iwbtg* iw)
             drawText(&iw->game, 0, "CONTROLLERS", 8, 540 - 32 - 8);
         else if(e->mode == EditorMode_scripts)
             drawText(&iw->game, 0, "SCRIPTS", 8, 540 - 32 - 8);
+        
+        char roomText[128];
+        int mx = iw->game.input.mousePosition.x / 32;
+        int my = iw->game.input.mousePosition.y / 32;
+        snprintf(roomText, 128, "CURRENT ROOM %03d,%03d\n  MOUSE TILE   %02d,%02d", 
+                 iw->room.x, iw->room.y, mx, my);
+        drawText(&iw->game, &iw->fontSmall, roomText, 960 - 192 - 8 - 16, 8);
     }
 }

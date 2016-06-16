@@ -27,9 +27,12 @@ char* loadText(char* filename)
         text[length] = '\0';
         
         fclose(file);
+        
+        return text;
     }
+    printf("Error: Did not find text file: \"%s\"\n", filename);
     
-    return text;
+    return 0;
 }
 
 float inOutEase(float t)

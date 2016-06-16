@@ -5,4 +5,6 @@ background2hSpeed = 15
 
 background3 = "stage1Back3"
 
-music = "stage2Music"
+blockTexture = "stage1BlockTiles"
+
+music = "stage1Music"

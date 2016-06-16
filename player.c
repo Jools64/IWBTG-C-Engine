@@ -119,33 +119,70 @@ void playerUpdate(Player* p, Iwbtg* iw)
             }
         }
         
+        bool onVineLeft = playerCheckCollisionAtOffset(p, iw, EntityType_vine, -1, 0) != 0;
+        bool onVineRight = playerCheckCollisionAtOffset(p, iw, EntityType_vine, 1, 0) != 0;
+        
+        if(onVineLeft || onVineRight)
+            p->velocity.y = 2;//clamp(p->velocity.y, -2, 2);
+        
         // Running
         if(checkKey(g, KEY_LEFT))
         {
             p->sprite.scale.x = -1;
             p->velocity.x -= 3;
+            
+            if(onVineRight && checkKey(g, KEY_JUMP))
+            {
+                p->velocity.y = -9;
+                p->velocity.x = -15;
+                soundPlay(assetsGetSound(&iw->game, "jump"), 1);
+                onVineRight = false;
+            }
         }
         
         if(checkKey(g, KEY_RIGHT))
         {
             p->sprite.scale.x = 1;
             p->velocity.x += 3;
+            
+            if(onVineLeft && checkKey(g, KEY_JUMP))
+            {
+                p->velocity.y = -9;
+                p->velocity.x = 15;
+                soundPlay(assetsGetSound(&iw->game, "jump"), 1);
+                onVineLeft = false;
+            }
         }
+        
+        if(onVineLeft)
+                p->sprite.scale.x = 1;
+        else if(onVineRight)
+                p->sprite.scale.x = -1;
         
         // Change the hitbox for different facing directions
         if(p->sprite.scale.x == -1)
         {
-            p->hitBox.x = 9.0f;
-            p->hitBox.w = 11.0f; 
+            if(p->hitBox.x > 10.5f)
+            {
+                p->position.x += 1;
+                p->hitBox.x = 9.0f;
+                p->hitBox.w = 11.0f; 
+            }
         }
         else
         {
-            p->hitBox.x = 12.0f;
-            p->hitBox.w = 11.0f; 
+            if(p->hitBox.x < 10.5f)
+            {
+                p->position.x -= 1;
+                p->hitBox.x = 12.0f;
+                p->hitBox.w = 11.0f; 
+            }
         }
         
         // Perform sprite animation logic
-        if(onGround)
+        if(onVineLeft || onVineRight)
+            spritePlayAnimation(&p->sprite, Animations_slide);
+        else if(onGround)
         {
             if(p->velocity.x == 0)
                 spritePlayAnimation(&p->sprite, Animations_stand);

@@ -49,6 +49,7 @@ double scriptReadNumber(ScriptState* ss, char* name, double defaultValue)
     for(int i = 0; i < ss->valueCount; ++i)
         if(ss->values[i].type == ScriptValueType_number && strcmp(ss->values[i].key, name) == 0)
             return ss->values[i].number;
+
     return defaultValue;
 }
 
@@ -157,7 +158,7 @@ bool getNextToken(ScriptState* s, Token* t)
                     valueStart = charPointer+1;
                     readState = 5;
                 }
-                else if(c == EOFC)
+                else if(c == EOFC || c == '\0')
                 {
                     t->type = TokenType_endOfFile;
                     return false;
@@ -302,7 +303,11 @@ ScriptState parseScript(char* s)
 ScriptState loadAndParseScript(char* fileName)
 {
     char* source = loadText(fileName);
-    ScriptState state = parseScript(source);
-    free(source);
+    ScriptState state = {0};
+    if(source)
+    {
+        state = parseScript(source);
+        free(source);
+    }
     return state;
 }
