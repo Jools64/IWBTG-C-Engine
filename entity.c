@@ -225,8 +225,12 @@ void entityUpdate(Entity* e, Iwbtg* iw, float dt)
             if(e->animationTimer > 0)
             {
                 e->animationTimer -= dt;
+                e->sprite.scale.y = e->sprite.scale.x = 1 + inOutEase(e->animationTimer);
                 if(e->animationTimer <= 0)
+                {
+                    e->sprite.scale.x = e->sprite.scale.y = 1;
                     e->sprite.frame = 0;
+                }
             }
             
             break;
