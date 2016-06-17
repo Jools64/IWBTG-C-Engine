@@ -99,11 +99,13 @@ void entitySetControllerFromTypeIndex(Entity* e, int typeIndex, Iwbtg* iw)
                 speedDirectionToVector2f(bc->distance, ((float)360 / bc->count) * i));
         }
     }
-    else if(typeIndex == 4 || typeIndex == 5) // Vine
+    else if(typeIndex == 4 || typeIndex == 5 || typeIndex == 6) // Vine
     {
         Entity* vine = createEntity(iw, EntityType_vine, e->position.x, e->position.y);
         if(typeIndex == 5)
             vine->sprite.frame = 1;
+        if(typeIndex == 6)
+            vine->sprite.frame = 2;
     }
     else if(typeIndex == 63) // Chaining controllers
     {
