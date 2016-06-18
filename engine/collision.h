@@ -66,3 +66,34 @@ bool checkRectangleIntersectSprite(Rectanglef* r, Vector2f* rp, Sprite* s, Vecto
     return false;
 }
 
+// Implementation credit to:
+// http://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
+
+char lineSegmentIntersection(Linef a, Linef b, Vector2f* intersection)
+{
+    Vector2f s1, s2;
+    float s, t;
+    
+    s1.x = a.b.x - a.a.x;     
+    s1.y = a.b.y - a.a.y;
+    s2.x = b.b.x - b.a.x;     
+    s2.y = b.b.y - b.a.y;
+
+    s = (-s1.y * (a.a.x - b.a.x) + s1.x * (a.a.y - b.a.y))
+      / (-s2.x * s1.y + s1.x * s2.y);
+    t = ( s2.x * (a.a.y - b.a.y) - s2.y * (a.a.x - b.a.x))
+      / (-s2.x * s1.y + s1.x * s2.y);
+
+    if (s >= 0 && s <= 1
+     && t >= 0 && t <= 1)
+    {
+        if (intersection != 0)
+        {
+            intersection->x = a.a.x + (t * s1.x);
+            intersection->y = a.a.y + (t * s1.y);
+        }
+        return 1;
+    }
+
+    return 0;
+}

@@ -34,6 +34,26 @@ void renderEnd(Game* game)
     #endif
 }
 
+void lineDraw(Game* g, float ax, float ay, float bx, float by,
+              float cr, float cg, float cb, float ca)
+{
+    #ifdef OPENGL
+    
+        
+    
+    #else
+        SDL_SetRenderDrawBlendMode(g->renderer,
+                                   SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(g->renderer, 
+                               clampi((cr * 255), 0, 255), 
+                               clampi((cg * 255), 0, 255), 
+                               clampi((cb * 255), 0, 255), 
+                               clampi((ca * 255), 0, 255));
+        SDL_RenderDrawLine(g->renderer, ax, ay, bx, by);
+    
+    #endif
+}
+
 void rectangleDraw(Game* g, float x, float y, float w, float h, 
                    float cr, float cg, float cb, float ca)
 {

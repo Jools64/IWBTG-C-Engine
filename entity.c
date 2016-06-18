@@ -102,10 +102,9 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
             break;
             
         case EntityType_boss:
-            spriteInit(&e->sprite, assetsGetTexture(&iw->game, "boss"), 128, 128);
+            e->position.x = x;
+            e->position.y = y;
             e->controller->type = ControllerType_boss;
-            e->position.x = x - 64 + 16;
-            e->position.y = - 128;//- 64 + 16;
             e->controller->boss.health = e->controller->boss.maxHealth = 30;
             e->controller->boss.actionQueueHead = e->controller->boss.actionQueueTail = 0;
             e->controller->boss.initialized = false;
@@ -116,10 +115,20 @@ Entity* createEntity(Iwbtg* iw, EntityType type, float x, float y)
                 e->controller->boss.actionQueue[i].active = 0;
             }
             e->depth = -4;
+            
+            if(iw->saveState.room.y == -19)
+                initializeBoss1(e, iw);
+            if(iw->saveState.room.y == -39)
+                initializeBoss2(e, iw);
             break;
             
         case EntityType_vine:
             spriteInit(&e->sprite, assetsGetTexture(&iw->game, "vine"), 32, 32);
+            e->depth = -2;
+            break;
+            
+        case EntityType_jumpRefresher:
+            spriteInit(&e->sprite, assetsGetTexture(&iw->game, "jumpRefresher"), 32, 32);
             e->depth = -2;
             break;
             
@@ -164,6 +173,8 @@ Entity* createEntityFromTypeIndex(Iwbtg* iw, int typeIndex, int x, int y)
         e = createEntity(iw, EntityType_boss, x, y);
         iw->boss = e;
     }
+    else if(typeIndex == 9)
+        e = createEntity(iw, EntityType_jumpRefresher, x, y);
     iw->entityMap[i][t] = e;
     
     return e;
@@ -301,6 +312,18 @@ void entityUpdate(Entity* e, Iwbtg* iw, float dt)
             if(bossIsActionQueueEmpty(&e->controller->boss))
                 addFirstBossActions(e, iw);
         } break;
+        
+        case EntityType_jumpRefresher:
+            
+            e->position.y -= sin(iw->time * 8) * 0.2;
+            
+            if(entityCheckPlayerCollisionAtOffset(e, &iw->player, 0, 0))
+            {
+                iw->player.doubleJumpAvailible = true;
+                destroyEntity(e);
+            }
+            
+            break;
         
         default:
             break;

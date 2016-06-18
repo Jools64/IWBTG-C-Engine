@@ -1,3 +1,17 @@
+void initializeBoss1(Entity* e, Iwbtg* iw)
+{
+    e->position.x = e->position.x - 64 + 16;
+    e->position.y = - 128;//- 64 + 16;
+    spriteInit(&e->sprite, assetsGetTexture(&iw->game, "boss"), 128, 128);
+}
+
+void initializeBoss2(Entity* e, Iwbtg* iw)
+{
+    e->position.x = e->position.x - 128 + 16;
+    e->position.y = - 128;
+    spriteInit(&e->sprite, assetsGetTexture(&iw->game, "boss2"), 256, 256);
+}
+
 // TODO: Remove this temporary code
 void addFirstBossActions(Entity* e, Iwbtg* iw)
 {

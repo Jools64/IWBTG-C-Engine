@@ -3,7 +3,40 @@
     TODO:
     
     - Restart music at correct position after game over
-
+    
+    
+    
+    Gameplay possibilities:
+    
+        - Water
+        - Jump refreshers (Like boshy)
+        - Spikes that switch on jump (Like boshy)
+        - On off platforms (Like megaman)
+        - Switches that can move / destroy entities
+        - High bounce pads
+        - Conveyor belts
+        - Pendulum movement
+        - Rotating lines of entities (Like the fireballs in super mario bros)
+        - Growing and shrinking entities
+        - Entity that shoots other entities
+            - Arced projectiles (like axes in castlevania)
+        - Sine wave movement pattern (Like madusas in castlevania)
+        - Falling and rising platforms (Like in IWBTG)
+        
+        
+    Spike boss
+    
+        - Boss falls from top of screen and land on ground
+        - Spikes fall randomly from the top of the screen
+        - spikes rise from the ground with gaps for player to stand in (warning signs above where spikes will appear)
+        - Boss moves back and forward across the room with different movement styles
+            Straight forward, sin wave up and down, patterns of popping up and down 
+        - Boss flies up into middle of screen and fires spikes in touhou style patterns
+            constant stream of of spikes in a circle
+            aimed stream of spikes
+            spikes that gradually change angle as they fly out
+        - Boss moves to lower corner of screen and fires formations of spikes across the ground
+            that have to be dodged: A nerfed gate, big diamond, etc
 */
 
 #define NO_MUSIC
@@ -32,6 +65,7 @@
 #include "controller.c"
 #include "player.c"
 #include "entity.c"
+#include "lighting.c"
 
 Script* levelGetScriptAtPosition(Level* l, int x, int y)
 {
@@ -556,6 +590,9 @@ void iwbtgLoad(Iwbtg* iw)
     assetsLoadTexture(g, "assets/night_sky.png", "nightSky");
     assetsLoadTexture(g, "assets/tower.png", "tower");
     assetsLoadTexture(g, "assets/vine.png", "vine");
+    assetsLoadTexture(g, "assets/jump_refresher.png", "jumpRefresher");
+    assetsLoadTexture(g, "assets/vignette.png", "vignette");
+    assetsLoadTexture(g, "assets/boss2.png", "boss2");
     
     assetsLoadSound(g, "assets/jump.wav", "jump");
     assetsLoadSound(g, "assets/double_jump.wav", "doubleJump");
@@ -710,6 +747,8 @@ void iwbtgDraw(Iwbtg* iw)
         if(!p->dead)
             spriteDraw(g, &iw->player.sprite, iw->player.position.x, iw->player.position.y);
         
+        textureDraw(g, assetsGetTexture(g, "vignette"), 0, 0);
+        
         char roomText[128];
         snprintf(roomText, 128, "%03d", 1 - iw->room.y);
         drawText(&iw->game, 0, roomText, 8, 8);
@@ -759,6 +798,15 @@ void iwbtgDraw(Iwbtg* iw)
         
         //rectangleDraw(g, iw->debugDrawPosition.x, iw->debugDrawPosition.y, 4, 4, 1, 0, 1, 1);
     }
+    
+    // Lighting test stuff
+    
+    WallGeometry wg;
+    wallGeometryInit(&wg);
+    wallGeometryCalculate(&wg, &iw->level);
+    wallGeometryDraw(&wg, g);
+    
+    // End of lighting test stuff
     
     textInputDraw(&iw->textInput, iw);
     

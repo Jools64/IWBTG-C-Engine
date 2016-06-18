@@ -15,6 +15,11 @@ typedef struct
     float x, y;
 } Vector2f;
 
+typedef struct Linef
+{
+    Vector2f a, b;
+} Linef;
+
 typedef struct Matrix3f
 {
     union

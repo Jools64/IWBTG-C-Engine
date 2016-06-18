@@ -20,7 +20,8 @@ typedef enum EntityType
     EntityType_fruit,
     EntityType_movingPlatform,
     EntityType_boss,
-    EntityType_vine
+    EntityType_vine,
+    EntityType_jumpRefresher,
 } EntityType;
 
 typedef struct Entity

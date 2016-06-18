@@ -219,7 +219,7 @@ bool gameInit(Game* g, char* title, int width, int height, float scale)
         printf("IMG_Init: %s\n", IMG_GetError());
     }
     
-    Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024);
+    Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 512);//1024);
     
     g->running = true;
     
